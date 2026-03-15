@@ -94,39 +94,44 @@ services:
   # DATABASES
   # ─────────────────────────────────────────
   account-db:
-    image: postgres:16-alpine
+    image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: account-db
     ports:
-      - "5432:5432"
+      - "1433:1433"
     environment:
-      POSTGRES_DB: account_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Postgres123!"
+      MSSQL_DB: account_db
     volumes:
-      - account-db-data:/var/lib/postgresql/data
+      - account-db-data:/var/opt/mssql/data
       - ./sql/account-init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - banking-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Postgres123!' -Q 'SELECT 1' -No -b"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   audit-db:
-    image: postgres:16-alpine
+    image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: audit-db
     ports:
-      - "5433:5432"
+      - "1434:1433"
     environment:
-      POSTGRES_DB: audit_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Postgres123!"
+      MSSQL_DB: audit_db
     volumes:
-      - audit-db-data:/var/lib/postgresql/data
+      - audit-db-data:/var/opt/mssql/data
       - ./sql/audit-init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - banking-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Postgres123!' -Q 'SELECT 1' -No -b"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Redis — cache số dư tài khoản
   redis:
