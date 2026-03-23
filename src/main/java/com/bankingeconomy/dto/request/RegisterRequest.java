@@ -7,12 +7,13 @@ import lombok.Builder;
 import lombok.Data;
 
 @Data
-public class LoginRequest {
+@Builder
+public class RegisterRequest {
 
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không hợp lệ")
-    private String email;
+    String email;
 
-    @NotBlank(message = "Mật khẩu không được để trống")
-    private String password;
+    @NotBlank(message = "password không được để trống")
+    String password;
 }
