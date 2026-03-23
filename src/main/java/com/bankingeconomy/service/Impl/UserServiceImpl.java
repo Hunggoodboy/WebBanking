@@ -28,6 +28,8 @@ public class UserServiceImpl implements UserService {
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .phone(request.getPhone())
                 .build();
 
         userRepository.save(user);
