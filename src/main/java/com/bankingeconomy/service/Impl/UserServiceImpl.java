@@ -2,7 +2,7 @@ package com.bankingeconomy.service.Impl;
 
 import com.bankingeconomy.dto.request.RegisterRequest;
 import com.bankingeconomy.dto.response.RegisterResponse;
-import com.bankingeconomy.model.User;
+import com.bankingeconomy.entity.User;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
-                .phone(request.getPhone())
+                .phoneNumber(request.getPhone())
                 .build();
 
         userRepository.save(user);

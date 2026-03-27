@@ -1,6 +1,6 @@
 package com.bankingeconomy.service.Impl;
 
-import com.bankingeconomy.model.User;
+import com.bankingeconomy.entity.User;
 import com.bankingeconomy.service.JwtService;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;

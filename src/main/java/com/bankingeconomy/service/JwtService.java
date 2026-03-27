@@ -1,6 +1,6 @@
 package com.bankingeconomy.service;
 
-import com.bankingeconomy.model.User;
+import com.bankingeconomy.entity.User;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.KeyLengthException;
 

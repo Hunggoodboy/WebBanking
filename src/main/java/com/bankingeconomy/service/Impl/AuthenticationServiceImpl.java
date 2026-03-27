@@ -3,7 +3,7 @@ package com.bankingeconomy.service.Impl;
 
 import com.bankingeconomy.dto.request.LoginRequest;
 import com.bankingeconomy.dto.response.LoginResponse;
-import com.bankingeconomy.model.User;
+import com.bankingeconomy.entity.User;
 import com.bankingeconomy.service.AuthenticationService;
 import com.bankingeconomy.service.JwtService;
 import lombok.RequiredArgsConstructor;
