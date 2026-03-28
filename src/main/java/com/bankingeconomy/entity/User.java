@@ -38,6 +38,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String phone;
 
+    @Column(name = "identity_card", unique = true, nullable = false)
+    private String identityCard;
+
     private String gender;
 
     @Enumerated(EnumType.STRING)

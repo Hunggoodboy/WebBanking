@@ -32,6 +32,7 @@ public class UserServiceImpl implements UserService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
+                .identityCard(request.getIdentityCard())
                 .build();
 
         userRepository.save(user);
