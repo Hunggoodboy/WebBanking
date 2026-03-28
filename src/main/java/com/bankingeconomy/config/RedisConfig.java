@@ -7,7 +7,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
@@ -21,8 +22,7 @@ public class RedisConfig {
         // Key serializer
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
-        // Value serializer
-        Jackson2JsonRedisSerializer<Object> jacksonSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
+        // Value serializer — custom, không dùng class deprecated
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.activateDefaultTyping(
                 BasicPolymorphicTypeValidator.builder()
@@ -30,14 +30,33 @@ public class RedisConfig {
                         .build(),
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY);
-        jacksonSerializer.setObjectMapper(objectMapper);
+
+        RedisSerializer<Object> jsonSerializer = new RedisSerializer<>() {
+            @Override
+            public byte[] serialize(Object value) throws SerializationException {
+                if (value == null) return new byte[0];
+                try {
+                    return objectMapper.writeValueAsBytes(value);
+                } catch (Exception e) {
+                    throw new SerializationException("Could not serialize object", e);
+                }
+            }
+
+            @Override
+            public Object deserialize(byte[] bytes) throws SerializationException {
+                if (bytes == null || bytes.length == 0) return null;
+                try {
+                    return objectMapper.readValue(bytes, Object.class);
+                } catch (Exception e) {
+                    throw new SerializationException("Could not deserialize object", e);
+                }
+            }
+        };
 
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
-
-        template.setValueSerializer(jacksonSerializer);
-        template.setHashValueSerializer(jacksonSerializer);
-
+        template.setValueSerializer(jsonSerializer);
+        template.setHashValueSerializer(jsonSerializer);
         template.afterPropertiesSet();
 
         return template;
