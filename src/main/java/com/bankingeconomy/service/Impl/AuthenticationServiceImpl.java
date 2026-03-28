@@ -9,6 +9,7 @@ import com.bankingeconomy.repository.RedisTokenRepository;
 import com.bankingeconomy.service.AuthenticationService;
 import com.bankingeconomy.service.JwtService;
 import com.bankingeconomy.utils.JwtInfo;
+import com.bankingeconomy.utils.TokenPayload;
 import com.nimbusds.jose.JOSEException;
 import lombok.RequiredArgsConstructor;
 
@@ -39,12 +40,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         User user = (User) authenticate.getPrincipal();
 
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
+        TokenPayload accessPayload = jwtService.generateAccessToken(user);
+        TokenPayload refreshPayload = jwtService.generateRefreshToken(user);
+        redisTokenRepository.save(RedisToken.builder()
+                        .jwtID(refreshPayload.getJwtId())
+                        .expiredTime(refreshPayload.getExpiredTime().getTime())
+                .build());
         // tra ve token
         return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .accessToken(accessPayload.getToken())
+                .refreshToken(refreshPayload.getToken())
                         .build();
     }
 

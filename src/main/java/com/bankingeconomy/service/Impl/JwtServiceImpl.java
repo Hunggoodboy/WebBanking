@@ -5,12 +5,14 @@ import com.bankingeconomy.entity.User;
 import com.bankingeconomy.repository.RedisTokenRepository;
 import com.bankingeconomy.service.JwtService;
 import com.bankingeconomy.utils.JwtInfo;
+import com.bankingeconomy.utils.TokenPayload;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
+import org.antlr.v4.runtime.Token;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +34,7 @@ public class JwtServiceImpl implements JwtService {
     private final RedisTokenRepository redisTokenRepository;
 
     @Override
-    public String generateAccessToken(User user) {
+    public TokenPayload generateAccessToken(User user) {
 
         // JWT header
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
@@ -40,12 +42,13 @@ public class JwtServiceImpl implements JwtService {
         // JWT payload
         Date issueTime = new Date();
         Date expriredTime = Date.from(issueTime.toInstant().plus(30, ChronoUnit.MINUTES));
+        String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
                 .issueTime(issueTime)
                 .expirationTime(expriredTime)
-                .jwtID(UUID.randomUUID().toString())
+                .jwtID(jwtId)
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -59,11 +62,17 @@ public class JwtServiceImpl implements JwtService {
             throw new RuntimeException(e);
         }
 
-        return jwsObject.serialize();
+        String token = jwsObject.serialize();
+
+        return TokenPayload.builder()
+                .token(token)
+                .jwtId(jwtId)
+                .expiredTime(expriredTime)
+                .build();
     }
 
     @Override
-    public String generateRefreshToken(User user) {
+    public TokenPayload generateRefreshToken(User user) {
 
         // JWT header
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
@@ -71,11 +80,13 @@ public class JwtServiceImpl implements JwtService {
         // JWT payload
         Date issueTime = new Date();
         Date expriredTime = Date.from(issueTime.toInstant().plus(30, ChronoUnit.DAYS));
+        String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
                 .issueTime(issueTime)
                 .expirationTime(expriredTime)
+                .jwtID(jwtId)
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -88,7 +99,13 @@ public class JwtServiceImpl implements JwtService {
         catch(JOSEException e){
             throw new RuntimeException(e);
         }
-        return jwsObject.serialize();
+        String token = jwsObject.serialize();
+
+        return TokenPayload.builder()
+                .token(token)
+                .jwtId(jwtId)
+                .expiredTime(expriredTime)
+                .build();
     }
 
     public boolean verifyToken(String token) throws ParseException, JOSEException {
