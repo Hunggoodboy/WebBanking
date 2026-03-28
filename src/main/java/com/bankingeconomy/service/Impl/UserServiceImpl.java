@@ -2,7 +2,9 @@ package com.bankingeconomy.service.Impl;
 
 import com.bankingeconomy.dto.request.RegisterRequest;
 import com.bankingeconomy.dto.response.RegisterResponse;
-import com.bankingeconomy.model.User;
+import com.bankingeconomy.exception.AppException;
+import com.bankingeconomy.exception.ErrorCode;
+import com.bankingeconomy.entity.User;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public RegisterResponse register(RegisterRequest request) {
         if(userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email đã tồn tại");
+            throw new AppException(ErrorCode.USER_EXISTED);
         }
 
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();

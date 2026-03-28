@@ -1,6 +1,6 @@
 package com.bankingeconomy.repository;
 
-import com.bankingeconomy.model.User;
+import com.bankingeconomy.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 

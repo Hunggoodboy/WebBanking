@@ -34,6 +34,7 @@ public class SecurityConfig {
 
 
     private final UserDetailServiceCustomizer userDetailsService;
+    private final JwtDecoderConfig jwtDecoderConfig;
 
     private final String[] WHITE_LIST = {
             "/api/auth/**",
@@ -44,23 +45,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST).permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoderConfig)));
         return http.build();
     }
 
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        String key = "123456789";
-        SecretKey secretKey = new SecretKeySpec(key.getBytes(), "HS512");
-        return NimbusJwtDecoder.withSecretKey(secretKey)
-                .macAlgorithm(MacAlgorithm.HS512)
-                .build();
-    }
 
     @Bean
     public AuthenticationManager authenticationManager() {

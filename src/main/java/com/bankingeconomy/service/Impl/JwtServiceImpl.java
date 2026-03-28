@@ -1,21 +1,35 @@
 package com.bankingeconomy.service.Impl;
 
-import com.bankingeconomy.model.User;
+import com.bankingeconomy.entity.RedisToken;
+import com.bankingeconomy.entity.User;
+import com.bankingeconomy.repository.RedisTokenRepository;
 import com.bankingeconomy.service.JwtService;
+import com.bankingeconomy.utils.JwtInfo;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 
+import java.text.ParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
 
 
 @Service
+@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
 
-    private String secretKey = "eyJhbGciOiJIUzUxMiJ9.ew0KICAic3ViIjogIjEyMzQ1Njc4OTAiLA0KICAibmFtZSI6ICJBbmlzaCBOYXRoIiwNCiAgImlhdCI6IDE1MTYyMzkwMjINCn0.ZjuawnJ2EoXlKYbNRffaOHKQikY7wPWzIYCePxB7512jl2EjIUg2Pz_ShjVBssd34eOEJ9n9gstU9D3oVRdL8";
+    @Value("${jwt.secret-key}")
+    private String secretKey;
+
+    private final RedisTokenRepository redisTokenRepository;
 
     @Override
     public String generateAccessToken(User user) {
@@ -31,6 +45,7 @@ public class JwtServiceImpl implements JwtService {
                 .subject(user.getEmail())
                 .issueTime(issueTime)
                 .expirationTime(expriredTime)
+                .jwtID(UUID.randomUUID().toString())
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -74,5 +89,38 @@ public class JwtServiceImpl implements JwtService {
             throw new RuntimeException(e);
         }
         return jwsObject.serialize();
+    }
+
+    public boolean verifyToken(String token) throws ParseException, JOSEException {
+
+        // Verify that the token has all the necessary headers, payloads, and signatures
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expirationDate = signedJWT.getJWTClaimsSet().getExpirationTime();
+        if(expirationDate.before(new Date())){
+            return false;
+        }
+
+        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        Optional<RedisToken> byId = redisTokenRepository.findById(jwtId);
+        if(byId.isPresent()){
+            throw new RuntimeException("Token already exists");
+        }
+
+        return signedJWT.verify(new MACVerifier(secretKey));
+    }
+
+    public JwtInfo parseToken(String token) throws ParseException {
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        Date issueTime = signedJWT.getJWTClaimsSet().getIssueTime();
+        Date expiredTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        return JwtInfo.builder()
+                .jwtId(jwtId)
+                .issueTime(issueTime)
+                .expirationTime(expiredTime)
+                .build();
+
     }
 }
