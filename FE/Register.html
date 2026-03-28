@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng ký Internet Banking</title>
+  <style>
+    :root {
+      --primary: #0f3d91;
+      --primary-hover: #0c3278;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --danger: #dc2626;
+      --success: #15803d;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(15, 61, 145, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 460px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid #e5e7eb;
+      padding: 32px 28px;
+    }
+
+    .bank-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 0 auto 16px;
+    }
+
+    .title {
+      text-align: center;
+      margin: 0;
+      font-size: 24px;
+      color: var(--primary);
+    }
+
+    .subtitle {
+      text-align: center;
+      margin: 8px 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .input {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fff;
+    }
+
+    .input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15, 61, 145, 0.12);
+    }
+
+    .password-wrap {
+      position: relative;
+    }
+
+    .toggle-btn {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: var(--primary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 6px;
+    }
+
+    .checkbox-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 4px 0 20px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .checkbox-wrap input {
+      margin-top: 3px;
+      accent-color: var(--primary);
+    }
+
+    .checkbox-wrap a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .checkbox-wrap a:hover {
+      text-decoration: underline;
+    }
+
+    .btn {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 13px;
+      margin-top: 6px;
+      min-height: 18px;
+    }
+
+    .success {
+      color: var(--success);
+      font-size: 14px;
+      margin-top: 14px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .switch-box {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .switch-text {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .switch-btn {
+      display: block;
+      width: 100%;
+      height: 46px;
+      line-height: 46px;
+      border: 1px solid var(--primary);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--primary);
+      font-size: 15px;
+      font-weight: 700;
+      background: #fff;
+      transition: all 0.2s;
+    }
+
+    .switch-btn:hover {
+      background: #f3f7ff;
+    }
+
+    @media (max-width: 480px) {
+      .auth-container {
+        padding: 24px 18px;
+      }
+
+      .title {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="bank-logo">B</div>
+    <h1 class="title">Đăng ký Internet Banking</h1>
+    <p class="subtitle">
+      Vui lòng điền đầy đủ thông tin để đăng ký sử dụng dịch vụ ngân hàng trực tuyến.
+    </p>
+
+    <form id="registerForm" novalidate>
+      <div class="form-group">
+        <label class="label" for="fullName">Họ và tên</label>
+        <input
+          class="input"
+          type="text"
+          id="fullName"
+          placeholder="Nhập họ và tên"
+          autocomplete="name"
+        />
+        <div class="error" id="fullNameError"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="label" for="customerId">Số CMND/CCCD</label>
+        <input
+          class="input"
+          type="text"
+          id="customerId"
+          placeholder="Nhập số CMND/CCCD"
+          autocomplete="off"
+        />
+        <div class="error" id="customerIdError"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="label" for="phone">Số điện thoại</label>
+        <input
+          class="input"
+          type="tel"
+          id="phone"
+          placeholder="Nhập số điện thoại"
+          autocomplete="tel"
+        />
+        <div class="error" id="phoneError"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="label" for="username">Email đăng nhập</label>
+        <input
+          class="input"
+          type="email"
+          id="username"
+          placeholder="Nhập địa chỉ email"
+          autocomplete="username"
+        />
+        <div class="error" id="usernameError"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="label" for="password">Mật khẩu</label>
+        <div class="password-wrap">
+          <input
+            class="input"
+            type="password"
+            id="password"
+            placeholder="Tạo mật khẩu"
+            autocomplete="new-password"
+          />
+          <button type="button" class="toggle-btn" id="togglePassword">Hiện</button>
+        </div>
+        <div class="error" id="passwordError"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="label" for="confirmPassword">Xác nhận mật khẩu</label>
+        <div class="password-wrap">
+          <input
+            class="input"
+            type="password"
+            id="confirmPassword"
+            placeholder="Nhập lại mật khẩu"
+            autocomplete="new-password"
+          />
+          <button type="button" class="toggle-btn" id="toggleConfirmPassword">Hiện</button>
+        </div>
+        <div class="error" id="confirmPasswordError"></div>
+      </div>
+
+      <label class="checkbox-wrap">
+        <input type="checkbox" id="agree" />
+        <span>
+          Tôi đồng ý với <a href="#">điều khoản sử dụng</a> và
+          <a href="#">chính sách bảo mật</a>.
+        </span>
+      </label>
+      <div class="error" id="agreeError"></div>
+
+      <button type="submit" class="btn" id="registerBtn">Đăng ký</button>
+      <div class="success" id="successMsg">Đăng ký thành công.</div>
+    </form>
+
+    <div class="switch-box">
+      <p class="switch-text">Đã có tài khoản Internet Banking?</p>
+      <a href="Login.html" class="switch-btn">Quay lại đăng nhập</a>
+    </div>
+  </div>
+  <script src="Auth.js"></script>
+</body>
+</html>
