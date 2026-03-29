@@ -1,4 +1,5 @@
-package com.bankingeconomy.entity; // Đặt chuẩn ở thư mục entity
+package com.bankingeconomy.model;
+
 
 import com.bankingeconomy.enums.Role;
 import jakarta.persistence.*;
@@ -6,10 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.kafka.common.record.UnalignedMemoryRecords;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -35,8 +39,11 @@ public class User implements UserDetails {
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    @Column(name = "phone_number", nullable = false)
-    private String phoneNumber;
+    @Column(nullable = false)
+    private String phone;
+
+    @Column(name = "identity_card", unique = true, nullable = false)
+    private String identityCard;
 
     private String gender;
 
@@ -54,32 +61,31 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return List.of();
     }
 
     @Override
     public String getUsername() {
-
-        return email;
+        return "";
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return true; // Mặc định cho phép tài khoản hoạt động
+        return UserDetails.super.isAccountNonExpired();
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true; // Mặc định không khóa tài khoản
+        return UserDetails.super.isAccountNonLocked();
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true; // Mặc định mật khẩu không hết hạn
+        return UserDetails.super.isCredentialsNonExpired();
     }
 
     @Override
     public boolean isEnabled() {
-        return true; // Mặc định kích hoạt tài khoản
+        return UserDetails.super.isEnabled();
     }
 }
