@@ -6,7 +6,7 @@ target/
 
 ### STS ###
 .apt_generated
-.classpath
+.classpat
 .factorypath
 .project
 .settings
@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+
+/src/main/resources/application-local.properties
