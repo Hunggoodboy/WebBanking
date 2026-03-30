@@ -1,4 +1,4 @@
-package com.bankingeconomy.model;
+package com.bankingeconomy.entity;
 
 
 import com.bankingeconomy.enums.Role;

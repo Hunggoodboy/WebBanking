@@ -22,7 +22,7 @@ public class RedisConfig {
         // Key serializer
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
-        // Value serializer — custom, không dùng class deprecated
+        // Value serializer — custom
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.activateDefaultTyping(
                 BasicPolymorphicTypeValidator.builder()
