@@ -1,12 +1,14 @@
 package com.bankingeconomy.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.Date;
 import java.util.UUID;
 
 @Entity
+@Data
 @Table(
         name = "notifications",
         indexes = {

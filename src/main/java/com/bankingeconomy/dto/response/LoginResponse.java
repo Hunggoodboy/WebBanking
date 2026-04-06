@@ -8,7 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class LoginResponse {
-
     private String accessToken;
     private String refreshToken;
 }

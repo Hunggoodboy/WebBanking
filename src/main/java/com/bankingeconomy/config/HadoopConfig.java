@@ -11,14 +11,15 @@ import java.net.URI;
 public class HadoopConfig {
 
     @Bean
-    public FileSystem fileSystem() throws Exception {
-        // 1. Khởi tạo cấu hình Hadoop
-        Configuration conf = new Configuration();
+    public FileSystem fileSystem() throws IOException {
+        System.setProperty("HADOOP_USER_NAME", "root");
 
-        // 2. Chỉ định địa chỉ NameNode (port 9000 từ Docker)
-        String hdfsUri = "hdfs://localhost:9000";
+        Configuration config = new Configuration();
+        config.set("fs.defaultFS", "hdfs://localhost:9000");
+        config.setBoolean("dfs.client.use.datanode.hostname", true);
+        config.setInt("dfs.replication", 1);
+        config.set("dfs.client.socket-timeout", "60000");
 
-        // 3. Trả về đối tượng FileSystem với quyền user là "root"
-        return FileSystem.get(URI.create(hdfsUri), conf, "root");
+        return FileSystem.newInstance(URI.create("hdfs://localhost:9000"), config);
     }
 }

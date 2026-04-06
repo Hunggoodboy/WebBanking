@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAppException(AppException ex, HttpServletRequest request) {
         ErrorCode errorCode = ex.getErrorCode();
         ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now().toString())
                 .status(errorCode.getCode())
                 .path(request.getRequestURI())
                 .error(errorCode.getMessage())
@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = Objects.requireNonNull(ex.getFieldError()).getDefaultMessage();
         ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now().toString())
                 .status(ErrorCode.INVALID_INPUT.getCode())
                 .path(request.getRequestURI())
                 .error(message)
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex, HttpServletRequest request) {
         ErrorCode errorCode = ErrorCode.INVALID_CREDENTIALS;
         ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now().toString())
                 .status(errorCode.getCode())
                 .path(request.getRequestURI())
                 .error(errorCode.getMessage())
@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUncategorizedException(Exception ex, HttpServletRequest request) {
         ErrorCode errorCode = ErrorCode.UNCATEGORIZED_EXCEPTION;
         ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now().toString())
                 .status(errorCode.getCode())
                 .path(request.getRequestURI())
                 .error(errorCode.getMessage())

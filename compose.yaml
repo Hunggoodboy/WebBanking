@@ -99,6 +99,43 @@ services:
     networks:
       - banking-net
 
+  # ─────────────────────────────────────────
+  # HADOOP CLUSTER
+  # ─────────────────────────────────────────
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    environment:
+      - CLUSTER_NAME=banking_cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks:
+      - banking-net
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: datanode
+    hostname: datanode
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_datanode_hostname=datanode
+      - HDFS_CONF_dfs_client_use_datanode_hostname=true
+    ports:
+      - "9866:9866"
+      - "9864:9864"
+    volumes:
+      - datanode-data:/hadoop/dfs/data
+    extra_hosts:
+      - "datanode:127.0.0.1"  # ✅ Map hostname datanode → localhost trong container
+    depends_on:
+      - namenode
+    networks:
+      - banking-net
 # ─────────────────────────────────────────
 # VOLUMES & NETWORKS
 # ─────────────────────────────────────────
@@ -110,7 +147,7 @@ volumes:
   audit-db-data:
   redis-data:
   grafana-data:
-
+  datanode-data:
 networks:
   banking-net:
     driver: bridge
