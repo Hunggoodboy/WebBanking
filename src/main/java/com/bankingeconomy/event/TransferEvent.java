@@ -64,29 +64,29 @@ public class TransferEvent {
     /**
      * Validate dữ liệu đầu vào
      */
-    private static void validate(
-            String fromAccountId,
-            String toAccountId,
-            String senderUserId,
-            String receiverUserId,
-            BigDecimal amount
-    ) {
-        Objects.requireNonNull(fromAccountId, "fromAccountId must not be null");
-        Objects.requireNonNull(toAccountId, "toAccountId must not be null");
-        Objects.requireNonNull(senderUserId, "senderUserId must not be null");
-        Objects.requireNonNull(receiverUserId, "receiverUserId must not be null");
-        Objects.requireNonNull(amount, "amount must not be null");
+   private static void validate(
+        String fromAccountId,
+        String toAccountId,
+        String senderUserId,
+        String receiverUserId,
+        BigDecimal amount
+) {
+    Objects.requireNonNull(fromAccountId, "ID tài khoản nguồn không được rỗng");
+    Objects.requireNonNull(toAccountId, "ID tài khoản đích không được rỗng");
+    Objects.requireNonNull(senderUserId, "ID người dùng thực hiện giao dịch không được rỗng");
+    Objects.requireNonNull(receiverUserId, "ID người dùng nhận tiền không được rỗng");
+    Objects.requireNonNull(amount, "Số tiền chuyển không được rỗng");
 
-        if (fromAccountId.equals(toAccountId)) {
-            throw new IllegalArgumentException("Cannot transfer to the same account");
-        }
-
-        if (senderUserId.equals(receiverUserId)) {
-            throw new IllegalArgumentException("Sender and receiver cannot be the same user");
-        }
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
-        }
+    if (fromAccountId.equals(toAccountId)) {
+        throw new IllegalArgumentException("Không thể chuyển tiền đến cùng một tài khoản");
     }
+
+    if (senderUserId.equals(receiverUserId)) {
+        throw new IllegalArgumentException("Người gửi và người nhận không được là cùng một người");
+    }
+
+    if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+        throw new IllegalArgumentException("Số tiền phải lớn hơn 0");
+    }
+}
 }
