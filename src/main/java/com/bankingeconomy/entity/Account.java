@@ -36,10 +36,10 @@ public class Account {
     @Column(name = "created_at")
     private Date createdAt;
 
-    @OneToMany(mappedBy = "to_account")
+    @OneToMany(mappedBy = "toAccount")
     private List<Transaction> incomingTransactions;
 
-    @OneToMany(mappedBy = "from_account")
+    @OneToMany(mappedBy = "fromAccount")
     private List<Transaction> outgoingTransactions;
 
     public static enum AccountStatus {

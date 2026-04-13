@@ -1,0 +1,24 @@
+package com.bankingeconomy.dto.response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ResponseData<T> {
+    private int status;
+    private String message;
+    private T data;
+
+    // Constructor cho PUT, PATCH, DELETE (không có data)
+    public ResponseData(int status, String message) {
+        this.status = status;
+        this.message = message;
+    }
+}

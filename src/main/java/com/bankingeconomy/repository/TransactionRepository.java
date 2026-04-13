@@ -16,5 +16,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query("SELECT t from Transaction t " +
             "WHERE (t.fromAccount.id = :accountId OR t.toAccount.id = :accountId) " +
             "AND (t.createdAt >= :start OR t.createdAt < :end)")
-    Page<Transaction> findAllByAccountIdBetween(UUID accountId, LocalDateTime start, LocalDateTime end);
+    Page<Transaction> findAllByAccountIdBetween(UUID accountId, LocalDateTime start, LocalDateTime end, Pageable pageable);
 }

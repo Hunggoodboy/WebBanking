@@ -20,11 +20,11 @@ public class Transaction {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "from_account", referencedColumnName = "id")
+    @JoinColumn(name = "from_account_id", referencedColumnName = "id")
     private Account fromAccount;
 
     @ManyToOne
-    @JoinColumn(name = "to_account", referencedColumnName = "id")
+    @JoinColumn(name = "to_account_id", referencedColumnName = "id")
     private Account toAccount;
 
     private double amount;

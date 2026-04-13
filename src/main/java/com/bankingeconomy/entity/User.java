@@ -1,43 +1,91 @@
 package com.bankingeconomy.entity;
 
+
+import com.bankingeconomy.enums.Role;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import org.hibernate.annotations.UuidGenerator;
+import lombok.NoArgsConstructor;
+import org.apache.kafka.common.record.UnalignedMemoryRecords;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Date;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
-@Entity
-@Table(
-        name = "users",
-        indexes = {
-                @Index(name = "idx_phone_number", columnList = "phone_number")
-        }
-)
 @Data
-public class User {
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+@Table(name = "users")
+public class User implements UserDetails {
+
     @Id
-    @UuidGenerator
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name="full_name", length = 100)
-    private String fullName;
-
-    private String password;
-
-    @Column(length = 100)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "phone_number", columnDefinition = "VARCHAR(20)")
-    private String phoneNumber;
+    @Column(nullable = false)
+    private String password;
 
-    @Column(name = "created_at")
-    private Date createdAt;
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
 
-    @OneToMany
-    private List<Account> accounts;
+    @Column(nullable = false)
+    private String phone;
 
-    @OneToMany
-    private List<Notification> notifications;
+    @Column(name = "identity_card", unique = true, nullable = false)
+    private String identityCard;
+
+    private String gender;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public String getUsername() {
+        return "";
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return UserDetails.super.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return UserDetails.super.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return UserDetails.super.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return UserDetails.super.isEnabled();
+    }
 }
