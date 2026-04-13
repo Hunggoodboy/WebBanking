@@ -53,6 +53,12 @@ public class User implements UserDetails {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @OneToMany(mappedBy = "user")
+    private List<Account> accounts;
+
+    @OneToMany(mappedBy = "user")
+    private List<Beneficiary> beneficiaries;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
