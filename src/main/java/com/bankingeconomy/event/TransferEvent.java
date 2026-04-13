@@ -10,6 +10,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -26,6 +30,7 @@ public class TransferEvent {
     private Instant timestamp;
     private TransferStatus status;
     private String description;
+
     public enum TransferStatus {
         PENDING,
         PROCESSING,
@@ -57,14 +62,13 @@ public class TransferEvent {
                 .currency("VND")
                 .timestamp(Instant.now())
                 .status(TransferStatus.PENDING)
-                .description("Transfer from " + fromAccountId + " to " + toAccountId)
                 .build();
     }
 
     /**
      * Validate dữ liệu đầu vào
      */
-    private static void validate(
+   private static void validate(
         String fromAccountId,
         String toAccountId,
         String senderUserId,
