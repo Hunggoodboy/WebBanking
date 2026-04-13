@@ -9,12 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "accounts",
-        indexes = {
-                @Index(name = "idx_user_id", columnList = "user_id")
-        }
-)
+@Table(name = "accounts", indexes = {
+        @Index(name = "idx_user_id", columnList = "user_id")
+})
 @Data
 public class Account {
     @Id
