@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lịch sử giao dịch</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f7f7fb 0%, #f5f4ff 60%, #eefcff 100%);
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding-bottom: 24px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 18px 18px;
+      background: #fff;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 26px;
+      color: #1d32d0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1d32d0;
+    }
+
+    .filter-card,
+    .summary-card,
+    .list-card {
+      margin: 16px;
+      background: #fff;
+      border: 1px solid #dfe7ff;
+      border-radius: 18px;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.05);
+    }
+
+    .filter-card {
+      padding: 18px 16px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #17203a;
+      margin-bottom: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .form-input,
+    .form-select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+      color: #1f2937;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      border-color: #1d32d0;
+      box-shadow: 0 0 0 3px rgba(29, 50, 208, 0.1);
+    }
+
+    .range-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #1d32d0;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #eef2ff;
+      color: #1d32d0;
+    }
+
+    .summary-card {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .summary-box {
+      background: #f8faff;
+      border: 1px solid #e3eaff;
+      border-radius: 16px;
+      padding: 14px 12px;
+    }
+
+    .summary-label {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .summary-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #17203a;
+    }
+
+    .summary-value.success {
+      color: #15803d;
+    }
+
+    .summary-value.pending {
+      color: #d97706;
+    }
+
+    .list-card {
+      overflow: hidden;
+    }
+
+    .list-header {
+      padding: 18px 16px 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #17203a;
+    }
+
+    .empty {
+      padding: 20px 16px 24px;
+      text-align: center;
+      color: #64748b;
+      font-size: 15px;
+    }
+
+    .transaction-item {
+      padding: 16px;
+      border-top: 1px solid #e7ecff;
+    }
+
+    .transaction-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      align-items: flex-start;
+    }
+
+    .transaction-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #17203a;
+      line-height: 1.4;
+    }
+
+    .transaction-date {
+      font-size: 13px;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .transaction-meta {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .meta-label {
+      color: #64748b;
+    }
+
+    .meta-value {
+      color: #1f2937;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-failed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .message {
+      margin: 0 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .message.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .message.info {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <button class="icon-btn">&#8249;</button>
+        <div class="header-title">Lịch sử giao dịch</div>
+      </div>
+      <button class="icon-btn">&#8962;</button>
+    </div>
+
+    <div class="filter-card">
+      <div class="section-title">Bộ lọc thời gian</div>
+
+      <div class="form-group">
+        <label class="form-label">Loại lọc</label>
+        <select id="filterType" class="form-select">
+          <option value="day">Theo ngày</option>
+          <option value="week">Theo tuần</option>
+          <option value="month">Theo tháng</option>
+          <option value="year">Theo năm</option>
+        </select>
+      </div>
+
+      <div class="range-grid">
+        <div class="form-group">
+          <label class="form-label">Bắt đầu</label>
+          <input id="startInput" class="form-input" type="date" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Kết thúc</label>
+          <input id="endInput" class="form-input" type="date" />
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-primary" id="btnFilter">Lọc dữ liệu</button>
+        <button class="btn btn-secondary" id="btnReset">Đặt lại</button>
+      </div>
+    </div>
+
+    <div class="message error" id="errorMessage"></div>
+    <div class="message info" id="infoMessage"></div>
+
+    <div class="summary-card">
+      <div class="summary-box">
+        <div class="summary-label">Tổng giao dịch</div>
+        <div class="summary-value" id="totalCount">0</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-label">Thành công</div>
+        <div class="summary-value success" id="successCount">0</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-label">Đang xử lý</div>
+        <div class="summary-value pending" id="pendingCount">0</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-label">Khoảng thời gian</div>
+        <div class="summary-value" id="rangeText" style="font-size:16px;">Tất cả</div>
+      </div>
+    </div>
+
+    <div class="list-card">
+      <div class="list-header">Danh sách giao dịch</div>
+      <div id="transactionList"></div>
+    </div>
+  </div>
+
+  <script>
+    const USE_REAL_API = false;
+
+    // API gợi ý cho backend:
+    // GET /api/history/me?filterType=day&start=2026-05-02&end=2026-05-04
+    const API_HISTORY = "http://localhost:8080/api/history/me";
+
+    const mockData = [
+      {
+        id: "GD001",
+        title: "Thanh toán hóa đơn điện",
+        date: "2026-05-02",
+        amount: "850.000 VNĐ",
+        type: "Thanh toán",
+        source: "MB Bank",
+        status: "success"
+      },
+      {
+        id: "GD002",
+        title: "Nạp tiền điện thoại",
+        date: "2026-05-04",
+        amount: "100.000 VNĐ",
+        type: "Nạp tiền",
+        source: "Ví điện tử",
+        status: "success"
+      },
+      {
+        id: "GD003",
+        title: "Chuyển tiền bạn bè",
+        date: "2026-05-18",
+        amount: "500.000 VNĐ",
+        type: "Chuyển khoản",
+        source: "MB Bank",
+        status: "pending"
+      },
+      {
+        id: "GD004",
+        title: "Thanh toán mua sắm",
+        date: "2026-06-04",
+        amount: "1.250.000 VNĐ",
+        type: "Mua sắm",
+        source: "Thẻ nội địa",
+        status: "failed"
+      },
+      {
+        id: "GD005",
+        title: "Thanh toán học phí",
+        date: "2026-06-12",
+        amount: "3.000.000 VNĐ",
+        type: "Học phí",
+        source: "MB Bank",
+        status: "success"
+      },
+      {
+        id: "GD006",
+        title: "Gia hạn gói dịch vụ",
+        date: "2025-12-20",
+        amount: "299.000 VNĐ",
+        type: "Dịch vụ",
+        source: "Ví điện tử",
+        status: "success"
+      }
+    ];
+
+    let currentData = [...mockData];
+
+    const filterType = document.getElementById("filterType");
+    const startInput = document.getElementById("startInput");
+    const endInput = document.getElementById("endInput");
+    const btnFilter = document.getElementById("btnFilter");
+    const btnReset = document.getElementById("btnReset");
+
+    const transactionList = document.getElementById("transactionList");
+    const totalCount = document.getElementById("totalCount");
+    const successCount = document.getElementById("successCount");
+    const pendingCount = document.getElementById("pendingCount");
+    const rangeText = document.getElementById("rangeText");
+    const errorMessage = document.getElementById("errorMessage");
+    const infoMessage = document.getElementById("infoMessage");
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = "block";
+      infoMessage.style.display = "none";
+    }
+
+    function showInfo(message) {
+      infoMessage.textContent = message;
+      infoMessage.style.display = "block";
+      errorMessage.style.display = "none";
+    }
+
+    function hideMessages() {
+      errorMessage.style.display = "none";
+      infoMessage.style.display = "none";
+    }
+
+    function getStatusText(status) {
+      if (status === "success") return "Thành công";
+      if (status === "pending") return "Đang xử lý";
+      return "Thất bại";
+    }
+
+    function getStatusClass(status) {
+      if (status === "success") return "status-success";
+      if (status === "pending") return "status-pending";
+      return "status-failed";
+    }
+
+    function renderList(data) {
+      transactionList.innerHTML = "";
+
+      if (data.length === 0) {
+        transactionList.innerHTML = '<div class="empty">Không có giao dịch nào trong khoảng thời gian đã chọn.</div>';
+      } else {
+        data.forEach(item => {
+          transactionList.innerHTML += `
+            <div class="transaction-item">
+              <div class="transaction-top">
+                <div class="transaction-title">${item.title}</div>
+                <div class="transaction-date">${item.date}</div>
+              </div>
+
+              <div class="transaction-meta">
+                <div class="meta-row">
+                  <div class="meta-label">Mã giao dịch</div>
+                  <div class="meta-value">${item.id}</div>
+                </div>
+
+                <div class="meta-row">
+                  <div class="meta-label">Loại</div>
+                  <div class="meta-value">${item.type}</div>
+                </div>
+
+                <div class="meta-row">
+                  <div class="meta-label">Nguồn</div>
+                  <div class="meta-value">${item.source}</div>
+                </div>
+
+                <div class="meta-row">
+                  <div class="meta-label">Số tiền</div>
+                  <div class="meta-value">${item.amount}</div>
+                </div>
+              </div>
+
+              <span class="status-tag ${getStatusClass(item.status)}">${getStatusText(item.status)}</span>
+            </div>
+          `;
+        });
+      }
+
+      totalCount.textContent = data.length;
+      successCount.textContent = data.filter(item => item.status === "success").length;
+      pendingCount.textContent = data.filter(item => item.status === "pending").length;
+    }
+
+    function changeInputType() {
+      const type = filterType.value;
+
+      if (type === "day") {
+        startInput.type = "date";
+        endInput.type = "date";
+        startInput.placeholder = "";
+        endInput.placeholder = "";
+      }
+
+      if (type === "week") {
+        startInput.type = "week";
+        endInput.type = "week";
+      }
+
+      if (type === "month") {
+        startInput.type = "month";
+        endInput.type = "month";
+      }
+
+      if (type === "year") {
+        startInput.type = "number";
+        endInput.type = "number";
+        startInput.min = "2000";
+        endInput.min = "2000";
+        startInput.max = "2100";
+        endInput.max = "2100";
+        startInput.placeholder = "VD: 2025";
+        endInput.placeholder = "VD: 2026";
+      }
+
+      startInput.value = "";
+      endInput.value = "";
+    }
+
+    function normalizeValueByType(value, type, isEnd = false) {
+      if (!value) return null;
+
+      if (type === "day") {
+        return new Date(value + "T00:00:00").getTime();
+      }
+
+      if (type === "week") {
+        const [year, week] = value.split("-W");
+        const firstDay = getDateOfISOWeek(Number(week), Number(year));
+        const date = new Date(firstDay);
+        if (isEnd) {
+          date.setDate(date.getDate() + 6);
+        }
+        return date.getTime();
+      }
+
+      if (type === "month") {
+        const [year, month] = value.split("-");
+        const date = isEnd
+          ? new Date(Number(year), Number(month), 0)
+          : new Date(Number(year), Number(month) - 1, 1);
+        return date.getTime();
+      }
+
+      if (type === "year") {
+        const year = Number(value);
+        const date = isEnd ? new Date(year, 11, 31) : new Date(year, 0, 1);
+        return date.getTime();
+      }
+
+      return null;
+    }
+
+    function getDateOfISOWeek(week, year) {
+      const simple = new Date(year, 0, 1 + (week - 1) * 7);
+      const dayOfWeek = simple.getDay();
+      const ISOweekStart = simple;
+      if (dayOfWeek <= 4) {
+        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+      } else {
+        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+      }
+      ISOweekStart.setHours(0, 0, 0, 0);
+      return ISOweekStart;
+    }
+
+    function filterLocalData() {
+      hideMessages();
+
+      const type = filterType.value;
+      const startValue = startInput.value;
+      const endValue = endInput.value;
+
+      if (!startValue || !endValue) {
+        showError("Vui lòng chọn đầy đủ thời gian bắt đầu và kết thúc.");
+        return;
+      }
+
+      const start = normalizeValueByType(startValue, type, false);
+      const end = normalizeValueByType(endValue, type, true);
+
+      if (start > end) {
+        showError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc.");
+        return;
+      }
+
+      currentData = mockData.filter(item => {
+        const itemTime = new Date(item.date + "T00:00:00").getTime();
+        return itemTime >= start && itemTime <= end;
+      });
+
+      rangeText.textContent = `${startValue} → ${endValue}`;
+      renderList(currentData);
+      showInfo("Đã lọc dữ liệu theo khoảng thời gian đã chọn.");
+    }
+
+    async function fetchHistoryFromApi() {
+      hideMessages();
+
+      const type = filterType.value;
+      const startValue = startInput.value;
+      const endValue = endInput.value;
+
+      if (!startValue || !endValue) {
+        showError("Vui lòng chọn đầy đủ thời gian bắt đầu và kết thúc.");
+        return;
+      }
+
+      if (!USE_REAL_API) {
+        filterLocalData();
+        return;
+      }
+
+      try {
+        const url = new URL(API_HISTORY);
+        url.searchParams.append("filterType", type);
+        url.searchParams.append("start", startValue);
+        url.searchParams.append("end", endValue);
+
+        const response = await fetch(url.toString(), {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            // "Authorization": "Bearer <token>"
+          }
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "Không tải được lịch sử giao dịch.");
+        }
+
+        const data = await response.json();
+        currentData = data.data || data || [];
+        rangeText.textContent = `${startValue} → ${endValue}`;
+        renderList(currentData);
+        showInfo("Đã tải dữ liệu từ hệ thống.");
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    function resetFilter() {
+      hideMessages();
+      startInput.value = "";
+      endInput.value = "";
+      currentData = [...mockData];
+      rangeText.textContent = "Tất cả";
+      renderList(currentData);
+    }
+
+    filterType.addEventListener("change", changeInputType);
+    btnFilter.addEventListener("click", fetchHistoryFromApi);
+    btnReset.addEventListener("click", resetFilter);
+
+    changeInputType();
+    renderList(currentData);
+  </script>
+</body>
+</html>

@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hồ sơ người dùng</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f7f7fb 0%, #f5f4ff 60%, #eefcff 100%);
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding-bottom: 30px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 18px 18px;
+      background: #fff;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 26px;
+      color: #1d32d0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1d32d0;
+    }
+
+    .profile-card {
+      margin: 28px 16px 20px;
+      background: #fff;
+      border: 1px solid #dbe4ff;
+      border-radius: 22px;
+      padding: 70px 16px 18px;
+      position: relative;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
+    }
+
+    .avatar-wrap {
+      position: absolute;
+      top: -58px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 126px;
+      height: 126px;
+    }
+
+    .avatar {
+      width: 126px;
+      height: 126px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #e8edff;
+      background: #eef2ff;
+      display: block;
+    }
+
+    .avatar-edit-btn {
+      position: absolute;
+      right: -2px;
+      bottom: 10px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: #fff;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      cursor: pointer;
+      font-size: 20px;
+      color: #1f2937;
+    }
+
+    .profile-name {
+      text-align: center;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      color: #17203a;
+    }
+
+    .profile-id {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 22px;
+      color: #1f2937;
+    }
+
+    .profile-id span {
+      color: #1d32d0;
+      font-weight: 700;
+    }
+
+    .quick-boxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .quick-box {
+      background: #fff;
+      border: 1px solid #dfe7ff;
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 90px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      box-shadow: 0 4px 12px rgba(29, 50, 208, 0.05);
+    }
+
+    .quick-box.gray {
+      background: #f1f1f7;
+      border: none;
+    }
+
+    .quick-icon {
+      font-size: 24px;
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    .quick-text {
+      font-size: 15px;
+      line-height: 1.45;
+      color: #2a334a;
+    }
+
+    .quick-text strong {
+      display: block;
+      font-size: 17px;
+      margin-top: 4px;
+    }
+
+    .loyalty-box {
+      border: 1px solid #dfe7ff;
+      border-radius: 18px;
+      padding: 18px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .loyalty-left {
+      flex: 1;
+    }
+
+    .loyalty-label {
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .loyalty-score {
+      font-size: 32px;
+      font-weight: 700;
+      color: #17203a;
+      margin-bottom: 8px;
+    }
+
+    .loyalty-link {
+      color: #1d32d0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .redeem-btn {
+      border: none;
+      background: #1d32d0;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 12px 22px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .menu-card {
+      margin: 18px 16px 0;
+      background: #fff;
+      border: 1px solid #dfe7ff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.05);
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 22px 18px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .menu-item:hover {
+      background: #f8faff;
+    }
+
+    .menu-item + .menu-item {
+      border-top: 1px solid #e7ecff;
+    }
+
+    .menu-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .menu-icon {
+      width: 36px;
+      text-align: center;
+      font-size: 24px;
+      color: #1d32d0;
+    }
+
+    .menu-text {
+      font-size: 18px;
+      color: #1f2937;
+      font-weight: 500;
+    }
+
+    .menu-arrow {
+      font-size: 28px;
+      color: #1d32d0;
+      line-height: 1;
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    .panel-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 430px;
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      padding: 20px 16px 24px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+      }
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .panel-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #17203a;
+    }
+
+    .close-btn {
+      border: none;
+      background: #eef2ff;
+      color: #1d32d0;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .form-input,
+    .form-textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus {
+      border-color: #1d32d0;
+      box-shadow: 0 0 0 3px rgba(29, 50, 208, 0.1);
+    }
+
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .btn-outline,
+    .btn-primary {
+      flex: 1;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-outline {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+    }
+
+    .btn-primary {
+      border: none;
+      background: #1d32d0;
+      color: #fff;
+    }
+
+    .message {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .message.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .message.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <button class="icon-btn">&#8249;</button>
+        <div class="header-title">Hồ sơ người dùng</div>
+      </div>
+      <button class="icon-btn">&#8962;</button>
+    </div>
+
+    <div class="profile-card">
+      <div class="avatar-wrap">
+        <img
+          id="avatarPreview"
+          class="avatar"
+          src="https://via.placeholder.com/300x300.png?text=Avatar"
+          alt="Ảnh đại diện"
+        />
+        <button class="avatar-edit-btn" id="btnChooseAvatar">✎</button>
+        <input type="file" id="avatarInputFile" class="hidden-input" accept="image/*" />
+      </div>
+
+      <div class="profile-name" id="profileName">NGO MINH NHAT</div>
+      <div class="profile-id">User ID: <span id="profileUserId">0981235234</span></div>
+
+      <div class="quick-boxes">
+        <div class="quick-box gray">
+          <div class="quick-icon">🛡️</div>
+          <div class="quick-text"><strong>Kích hoạt để được bảo vệ</strong></div>
+        </div>
+
+        <div class="quick-box">
+          <div class="quick-icon">👑</div>
+          <div class="quick-text">
+            Gói hội viên MB
+            <strong>Basic</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="loyalty-box">
+        <div class="loyalty-left">
+          <div class="loyalty-label">ĐIỂM LOYALTY</div>
+          <div class="loyalty-score">150 🪙</div>
+          <div class="loyalty-link">Tích điểm &#8250;</div>
+        </div>
+        <button class="redeem-btn">Đổi quà</button>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="menu-item" id="openPersonalInfo">
+        <div class="menu-left">
+          <div class="menu-icon">👤</div>
+          <div class="menu-text">Thông tin cá nhân</div>
+        </div>
+        <div class="menu-arrow">&#8250;</div>
+      </div>
+
+      <div class="menu-item" id="openEmail">
+        <div class="menu-left">
+          <div class="menu-icon">✉️</div>
+          <div class="menu-text">Email</div>
+        </div>
+        <div class="menu-arrow">&#8250;</div>
+      </div>
+
+      <div class="menu-item" id="openChangePassword">
+        <div class="menu-left">
+          <div class="menu-icon">🔒</div>
+          <div class="menu-text">Đổi mật khẩu</div>
+        </div>
+        <div class="menu-arrow">&#8250;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Thông tin cá nhân -->
+  <div class="panel-overlay" id="personalInfoOverlay">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Thông tin cá nhân</div>
+        <button class="close-btn" data-close="personalInfoOverlay">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Họ và tên</label>
+        <input type="text" class="form-input" id="fullNameInput" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Số điện thoại</label>
+        <input type="text" class="form-input" id="phoneInput" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Địa chỉ</label>
+        <input type="text" class="form-input" id="addressInput" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ngày sinh</label>
+        <input type="date" class="form-input" id="birthdayInput" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Giới thiệu bản thân</label>
+        <textarea class="form-textarea" id="bioInput"></textarea>
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn-outline" data-close="personalInfoOverlay">Hủy</button>
+        <button class="btn-primary" id="savePersonalInfoBtn">Lưu thay đổi</button>
+      </div>
+
+      <div class="message error" id="personalInfoError"></div>
+      <div class="message success" id="personalInfoSuccess"></div>
+    </div>
+  </div>
+
+  <!-- Panel Email -->
+  <div class="panel-overlay" id="emailOverlay">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Email</div>
+        <button class="close-btn" data-close="emailOverlay">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email hiện tại</label>
+        <input type="email" class="form-input" id="emailInput" />
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn-outline" data-close="emailOverlay">Hủy</button>
+        <button class="btn-primary" id="saveEmailBtn">Lưu email</button>
+      </div>
+
+      <div class="message error" id="emailError"></div>
+      <div class="message success" id="emailSuccess"></div>
+    </div>
+  </div>
+
+  <!-- Panel Đổi mật khẩu -->
+  <div class="panel-overlay" id="changePasswordOverlay">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Đổi mật khẩu</div>
+        <button class="close-btn" data-close="changePasswordOverlay">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mật khẩu hiện tại</label>
+        <input type="password" class="form-input" id="currentPasswordInput" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mật khẩu mới</label>
+        <input type="password" class="form-input" id="newPasswordInput" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nhập lại mật khẩu mới</label>
+        <input type="password" class="form-input" id="confirmPasswordInput" />
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn-outline" data-close="changePasswordOverlay">Hủy</button>
+        <button class="btn-primary" id="savePasswordBtn">Đổi mật khẩu</button>
+      </div>
+
+      <div class="message error" id="passwordError"></div>
+      <div class="message success" id="passwordSuccess"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // MOCK DATA FE
+    // =========================
+    let userProfile = {
+      userId: "0981235234",
+      fullName: "NGO MINH NHAT",
+      phone: "0981235234",
+      address: "Đà Nẵng",
+      birthday: "2004-10-21",
+      email: "minhnhat@gmail.com",
+      bio: "Sinh viên yêu thích Big Data",
+      avatar: "https://via.placeholder.com/300x300.png?text=Avatar"
+    };
+
+    // Đổi sang true khi backend xong
+    const USE_REAL_API = false;
+
+    // API contract gợi ý cho BE
+    const API_PROFILE = "http://localhost:8080/api/profile/me";
+    const API_CHANGE_PASSWORD = "http://localhost:8080/api/profile/change-password";
+    const API_UPLOAD_AVATAR = "http://localhost:8080/api/profile/avatar";
+
+    // =========================
+    // DOM
+    // =========================
+    const avatarPreview = document.getElementById("avatarPreview");
+    const btnChooseAvatar = document.getElementById("btnChooseAvatar");
+    const avatarInputFile = document.getElementById("avatarInputFile");
+    const profileName = document.getElementById("profileName");
+    const profileUserId = document.getElementById("profileUserId");
+
+    const personalInfoOverlay = document.getElementById("personalInfoOverlay");
+    const emailOverlay = document.getElementById("emailOverlay");
+    const changePasswordOverlay = document.getElementById("changePasswordOverlay");
+
+    const fullNameInput = document.getElementById("fullNameInput");
+    const phoneInput = document.getElementById("phoneInput");
+    const addressInput = document.getElementById("addressInput");
+    const birthdayInput = document.getElementById("birthdayInput");
+    const bioInput = document.getElementById("bioInput");
+    const emailInput = document.getElementById("emailInput");
+
+    const currentPasswordInput = document.getElementById("currentPasswordInput");
+    const newPasswordInput = document.getElementById("newPasswordInput");
+    const confirmPasswordInput = document.getElementById("confirmPasswordInput");
+
+    const personalInfoError = document.getElementById("personalInfoError");
+    const personalInfoSuccess = document.getElementById("personalInfoSuccess");
+    const emailError = document.getElementById("emailError");
+    const emailSuccess = document.getElementById("emailSuccess");
+    const passwordError = document.getElementById("passwordError");
+    const passwordSuccess = document.getElementById("passwordSuccess");
+
+    // =========================
+    // RENDER
+    // =========================
+    function renderProfile() {
+      profileName.textContent = userProfile.fullName || "NGƯỜI DÙNG";
+      profileUserId.textContent = userProfile.userId || "";
+      avatarPreview.src = userProfile.avatar || "https://via.placeholder.com/300x300.png?text=Avatar";
+    }
+
+    function fillPersonalInfoForm() {
+      fullNameInput.value = userProfile.fullName || "";
+      phoneInput.value = userProfile.phone || "";
+      addressInput.value = userProfile.address || "";
+      birthdayInput.value = userProfile.birthday || "";
+      bioInput.value = userProfile.bio || "";
+    }
+
+    function fillEmailForm() {
+      emailInput.value = userProfile.email || "";
+    }
+
+    function openOverlay(overlay) {
+      overlay.style.display = "flex";
+    }
+
+    function closeOverlay(overlay) {
+      overlay.style.display = "none";
+    }
+
+    function clearMessages() {
+      [personalInfoError, personalInfoSuccess, emailError, emailSuccess, passwordError, passwordSuccess].forEach(item => {
+        item.style.display = "none";
+        item.textContent = "";
+      });
+    }
+
+    function showMessage(el, text) {
+      el.textContent = text;
+      el.style.display = "block";
+    }
+
+    // =========================
+    // OPEN PANELS
+    // =========================
+    document.getElementById("openPersonalInfo").addEventListener("click", () => {
+      clearMessages();
+      fillPersonalInfoForm();
+      openOverlay(personalInfoOverlay);
+    });
+
+    document.getElementById("openEmail").addEventListener("click", () => {
+      clearMessages();
+      fillEmailForm();
+      openOverlay(emailOverlay);
+    });
+
+    document.getElementById("openChangePassword").addEventListener("click", () => {
+      clearMessages();
+      currentPasswordInput.value = "";
+      newPasswordInput.value = "";
+      confirmPasswordInput.value = "";
+      openOverlay(changePasswordOverlay);
+    });
+
+    document.querySelectorAll("[data-close]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        closeOverlay(document.getElementById(btn.getAttribute("data-close")));
+      });
+    });
+
+    // =========================
+    // CHỌN ẢNH TỪ MÁY
+    // =========================
+    btnChooseAvatar.addEventListener("click", () => {
+      avatarInputFile.click();
+    });
+
+    avatarInputFile.addEventListener("change", async function () {
+      const file = this.files[0];
+      if (!file) return;
+
+      // preview ngay trên FE
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        avatarPreview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      if (!USE_REAL_API) {
+        // mock: lưu tạm local
+        const localReader = new FileReader();
+        localReader.onload = function (e) {
+          userProfile.avatar = e.target.result;
+        };
+        localReader.readAsDataURL(file);
+        return;
+      }
+
+      // backend thật: upload ảnh
+      try {
+        const formData = new FormData();
+        formData.append("avatar", file);
+
+        const response = await fetch(API_UPLOAD_AVATAR, {
+          method: "POST",
+          body: formData,
+          headers: {
+            // "Authorization": "Bearer <token>"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Không tải được ảnh đại diện lên.");
+        }
+
+        const data = await response.json();
+        userProfile.avatar = data.data?.avatar || data.avatar || userProfile.avatar;
+        renderProfile();
+      } catch (error) {
+        alert(error.message);
+        renderProfile();
+      }
+    });
+
+    // =========================
+    // LƯU THÔNG TIN CÁ NHÂN
+    // =========================
+    document.getElementById("savePersonalInfoBtn").addEventListener("click", async () => {
+      clearMessages();
+
+      const fullName = fullNameInput.value.trim();
+      const phone = phoneInput.value.trim();
+      const address = addressInput.value.trim();
+      const birthday = birthdayInput.value.trim();
+      const bio = bioInput.value.trim();
+
+      if (!fullName) {
+        showMessage(personalInfoError, "Họ và tên không được để trống.");
+        return;
+      }
+
+      const payload = {
+        fullName,
+        phone,
+        address,
+        birthday,
+        bio
+      };
+
+      if (!USE_REAL_API) {
+        userProfile = {
+          ...userProfile,
+          ...payload
+        };
+        renderProfile();
+        showMessage(personalInfoSuccess, "Cập nhật thông tin cá nhân thành công.");
+        return;
+      }
+
+      try {
+        const response = await fetch(API_PROFILE, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            // "Authorization": "Bearer <token>"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "Cập nhật thông tin thất bại.");
+        }
+
+        const data = await response.json();
+        userProfile = data.data || data;
+        renderProfile();
+        showMessage(personalInfoSuccess, "Cập nhật thông tin cá nhân thành công.");
+      } catch (error) {
+        showMessage(personalInfoError, error.message);
+      }
+    });
+
+    // =========================
+    // LƯU EMAIL
+    // =========================
+    document.getElementById("saveEmailBtn").addEventListener("click", async () => {
+      clearMessages();
+
+      const email = emailInput.value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!email) {
+        showMessage(emailError, "Email không được để trống.");
+        return;
+      }
+
+      if (!emailRegex.test(email)) {
+        showMessage(emailError, "Email không đúng định dạng.");
+        return;
+      }
+
+      const payload = { email };
+
+      if (!USE_REAL_API) {
+        userProfile.email = email;
+        showMessage(emailSuccess, "Cập nhật email thành công.");
+        return;
+      }
+
+      try {
+        const response = await fetch(API_PROFILE, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            // "Authorization": "Bearer <token>"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "Cập nhật email thất bại.");
+        }
+
+        const data = await response.json();
+        userProfile = data.data || data;
+        renderProfile();
+        showMessage(emailSuccess, "Cập nhật email thành công.");
+      } catch (error) {
+        showMessage(emailError, error.message);
+      }
+    });
+
+    // =========================
+    // ĐỔI MẬT KHẨU
+    // =========================
+    document.getElementById("savePasswordBtn").addEventListener("click", async () => {
+      clearMessages();
+
+      const currentPassword = currentPasswordInput.value.trim();
+      const newPassword = newPasswordInput.value.trim();
+      const confirmPassword = confirmPasswordInput.value.trim();
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        showMessage(passwordError, "Vui lòng nhập đầy đủ thông tin mật khẩu.");
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showMessage(passwordError, "Mật khẩu mới phải có ít nhất 6 ký tự.");
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showMessage(passwordError, "Xác nhận mật khẩu mới không khớp.");
+        return;
+      }
+
+      const payload = {
+        currentPassword,
+        newPassword,
+        confirmPassword
+      };
+
+      if (!USE_REAL_API) {
+        showMessage(passwordSuccess, "Đổi mật khẩu thành công.");
+        currentPasswordInput.value = "";
+        newPasswordInput.value = "";
+        confirmPasswordInput.value = "";
+        return;
+      }
+
+      try {
+        const response = await fetch(API_CHANGE_PASSWORD, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            // "Authorization": "Bearer <token>"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "Đổi mật khẩu thất bại.");
+        }
+
+        showMessage(passwordSuccess, "Đổi mật khẩu thành công.");
+        currentPasswordInput.value = "";
+        newPasswordInput.value = "";
+        confirmPasswordInput.value = "";
+      } catch (error) {
+        showMessage(passwordError, error.message);
+      }
+    });
+
+    renderProfile();
+  </script>
+</body>
+</html>
