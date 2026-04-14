@@ -39,6 +39,9 @@ public class Account {
     @OneToMany(mappedBy = "fromAccount")
     private List<Transaction> outgoingTransactions;
 
+    @OneToMany(mappedBy = "targetAccount")
+    private List<Beneficiary> beneficiaries;
+
     public static enum AccountStatus {
         ACTIVE,
         INACTIVE,

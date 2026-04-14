@@ -27,7 +27,7 @@ public class AccountController {
     }
 
     // ─────────────────────────────────────────
-    // GET /api/accounts/number/{accountNumber}/balance — Xem số dư theo số tài khoản
+        // GET /api/accounts/number/{accountNumber}/balance — Xem số dư theo số tài khoản
     // ─────────────────────────────────────────
     @GetMapping("/number/{accountNumber}/balance")
     public ResponseData<BalanceResponse> getBalanceByAccountNumber(@PathVariable String accountNumber) {

@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "hadoop.enabled", havingValue = "true") 
+//@ConditionalOnProperty(name = "hadoop.enabled", havingValue = "true")
 public class HdfsService {
 
     @Autowired

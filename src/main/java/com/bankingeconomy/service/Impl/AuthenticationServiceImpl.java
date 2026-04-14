@@ -34,7 +34,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final JwtService jwtService;
     private final RedisTokenRepository redisTokenRepository;
 
-
     public LoginResponse login(LoginRequest request) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
@@ -43,9 +42,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         TokenPayload accessPayload = jwtService.generateAccessToken(user);
         TokenPayload refreshPayload = jwtService.generateRefreshToken(user);
+        long expiresInSeconds = (refreshPayload.getExpiredTime().getTime() - System.currentTimeMillis()) / 1000;
         redisTokenRepository.save(RedisToken.builder()
                         .jwtID(refreshPayload.getJwtId())
-                        .expiredTime(refreshPayload.getExpiredTime().getTime())
+                        .expiredTime(expiresInSeconds)
                 .build());
         // tra ve token
         return LoginResponse.builder()
@@ -57,16 +57,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void logout(String token) throws ParseException {
         JwtInfo jwtInfo = jwtService.parseToken(token);
         String jwtId = jwtInfo.getJwtId();
-        Date issueTime = jwtInfo.getIssueTime();
         Date expiredTime = jwtInfo.getExpirationTime();
 
         if(expiredTime.before(new Date())){
             return;
         }
-
+        long remainingSeconds = (expiredTime.getTime() - System.currentTimeMillis()) / 1000;
         RedisToken redisToken = RedisToken.builder()
                 .jwtID(jwtId)
-                .expiredTime(expiredTime.getTime() - new Date().getTime())
+                .expiredTime(remainingSeconds)
                 .build();
 
         redisTokenRepository.save(redisToken);

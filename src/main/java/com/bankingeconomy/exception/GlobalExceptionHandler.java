@@ -18,6 +18,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleAppException(AppException ex, HttpServletRequest request) {
         ErrorCode errorCode = ex.getErrorCode();
+        ex.printStackTrace();
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now().toString())
                 .status(errorCode.getCode())
@@ -31,6 +32,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = Objects.requireNonNull(ex.getFieldError()).getDefaultMessage();
+        ex.printStackTrace();
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now().toString())
                 .status(ErrorCode.INVALID_INPUT.getCode())
@@ -44,6 +46,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex, HttpServletRequest request) {
         ErrorCode errorCode = ErrorCode.INVALID_CREDENTIALS;
+        ex.printStackTrace();
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now().toString())
                 .status(errorCode.getCode())
@@ -57,6 +60,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUncategorizedException(Exception ex, HttpServletRequest request) {
         ErrorCode errorCode = ErrorCode.UNCATEGORIZED_EXCEPTION;
+        ex.printStackTrace();
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now().toString())
                 .status(errorCode.getCode())

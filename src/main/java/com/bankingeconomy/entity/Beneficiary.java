@@ -18,6 +18,7 @@ public class Beneficiary {
     @JoinColumn(referencedColumnName = "id", name = "user_id")
     private User user;
 
+    @ManyToOne
     @JoinColumn(name = "target_account_id", referencedColumnName = "id")
     private Account targetAccount;
 }
