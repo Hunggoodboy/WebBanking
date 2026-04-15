@@ -70,9 +70,9 @@ public class User implements UserDetails {
         return List.of();
     }
 
-    @Override
+        @Override
     public String getUsername() {
-        return "";
+        return this.email; // Phải trả về email để Spring Security định danh
     }
 
     @Override
