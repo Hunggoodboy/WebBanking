@@ -7,7 +7,12 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "beneficiaries")
+@Table(
+        name = "beneficiaries",
+        indexes = {
+            @Index(name = "idx_user_id", columnList = "user_id")
+        }
+)
 @Data
 public class Beneficiary {
     @Id
