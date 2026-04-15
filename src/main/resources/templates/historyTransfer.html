@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lịch sử giao dịch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./historyTransfer.css" />
+</head>
+<body>
+  <div class="app">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">Ngân hàng số</div>
+          <h1 class="title">Lịch sử giao dịch</h1>
+          <p class="subtitle">
+            Tra cứu và theo dõi các giao dịch phát sinh trên tài khoản, đối chiếu biến động số dư
+            và nhận biết nhanh giao dịch vào, ra hoặc chuyển nội bộ.
+          </p>
+        </div>
+        <button class="nav-btn" id="openProfileBtn" type="button">Xem hồ sơ cá nhân</button>
+      </div>
+      <div class="hero-tags">
+        <span class="tag">Tra cứu theo ngày</span>
+        <span class="tag">Tra cứu theo tuần</span>
+        <span class="tag">Tra cứu theo tháng</span>
+        <span class="tag">Tra cứu theo năm</span>
+      </div>
+    </section>
+
+    <section class="filter-card">
+      <div class="filter-head">
+        <div>
+          <h2 class="section-title">Điều kiện tra cứu</h2>
+          <p class="section-subtitle">Lựa chọn khoảng thời gian và trạng thái giao dịch để đối chiếu nhanh dữ liệu backend trả về.</p>
+        </div>
+        <div class="actions">
+          <button class="primary-btn" id="applyFilterBtn" type="button">Tra cứu giao dịch</button>
+          <button class="secondary-btn" id="resetFilterBtn" type="button">Làm mới điều kiện</button>
+        </div>
+      </div>
+
+      <div class="filter-grid">
+        <div class="field">
+          <label for="accountFilter">Phạm vi</label>
+          <select id="accountFilter"></select>
+        </div>
+        <div class="field">
+          <label for="filterType">Hình thức tra cứu</label>
+          <select id="filterType">
+            <option value="day">Theo ngày</option>
+            <option value="week">Theo tuần</option>
+            <option value="month">Theo tháng</option>
+            <option value="year">Theo năm</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="startValue">Thời gian bắt đầu</label>
+          <input id="startValue" type="date" />
+        </div>
+        <div class="field">
+          <label for="endValue">Thời gian kết thúc</label>
+          <input id="endValue" type="date" />
+        </div>
+        <div class="field">
+          <label for="statusFilter">Tình trạng giao dịch</label>
+          <select id="statusFilter">
+            <option value="all">Tất cả</option>
+            <option value="SUCCESS">Thành công</option>
+            <option value="PENDING">Chờ xử lý</option>
+            <option value="FAILED">Thất bại</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="meta-box" id="rangeInfo">Hệ thống đang tải lịch sử giao dịch từ backend.</div>
+    </section>
+
+    <section class="summary-grid">
+      <div class="summary-box">
+        <div class="summary-label">Tổng số giao dịch (toàn bộ)</div>
+        <div class="summary-value" id="totalCount">0</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-label">Giao dịch thành công (trang này)</div>
+        <div class="summary-value success" id="successCount">0</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-label">Giao dịch chờ xử lý (trang này)</div>
+        <div class="summary-value pending" id="pendingCount">0</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-label">Tổng số tiền (trang này)</div>
+        <div class="summary-value" id="amountTotal">0 VND</div>
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-head">
+        <div>
+          <h2 class="table-title">Danh sách giao dịch</h2>
+          <p class="table-subtitle">Dữ liệu được map theo schema backend: mã giao dịch, hướng giao dịch, tài khoản đối ứng, số tiền, trạng thái và thời điểm tạo.</p>
+        </div>
+        <div class="page-info" id="pageInfo">0 giao dịch</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã giao dịch</th>
+              <th>Hướng giao dịch</th>
+              <th>Tài khoản đối ứng</th>
+              <th>Nội dung giao dịch</th>
+              <th>Số tiền</th>
+              <th>Trạng thái</th>
+              <th>Thời điểm giao dịch</th>
+            </tr>
+          </thead>
+          <tbody id="transactionTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="table-footer">
+        <div class="page-size-box">
+          <label for="pageSizeSelect">Số dòng mỗi trang</label>
+          <select id="pageSizeSelect"></select>
+        </div>
+
+        <div class="pagination-wrap" id="paginationWrap">
+          <button class="page-btn nav" id="prevPageBtn" type="button">Trang trước</button>
+          <div class="page-numbers" id="pageNumberList"></div>
+          <button class="page-btn nav" id="nextPageBtn" type="button">Trang sau</button>
+        </div>
+      </div>
+
+      <div class="empty" id="emptyState" hidden>Không phát sinh giao dịch phù hợp với điều kiện tra cứu đã chọn.</div>
+    </section>
+  </div>
+
+  <script src="/js/historyTransfer.js"></script>
+</body>
+</html>

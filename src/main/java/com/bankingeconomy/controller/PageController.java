@@ -9,8 +9,14 @@ public class PageController {
     public String login() {
         return "Login";
     }
+
     @GetMapping("/register")
     public String register() {
         return "Register";
+    }
+
+    @GetMapping("/historyTransfer")
+    public String historyTransfer() {
+        return "historyTransfer";
     }
 }
