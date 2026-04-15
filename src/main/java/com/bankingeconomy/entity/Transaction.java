@@ -1,21 +1,28 @@
 package com.bankingeconomy.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Data
 @Table(
         name = "transactions",
         indexes = {
-                @Index(name = "idx_user_id", columnList = "user_id"),
+                @Index(name = "idx_to_account_id", columnList = "to_account_id"),
+                @Index(name = "idx_from_and_to_account_id", columnList = "from_account_id, to_account_id"),
                 @Index(name = "idx_user_created_at", columnList = "user_id, created_at")
         }
 )
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Transaction {
     @Id
     @UuidGenerator
