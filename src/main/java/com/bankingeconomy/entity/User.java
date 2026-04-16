@@ -45,6 +45,12 @@ public class User implements UserDetails {
     @Column(name = "identity_card", unique = true, nullable = false)
     private String identityCard;
 
+    @Column(nullable = false)
+    private String province;
+
+    @Column(nullable = false)
+    private String district;
+
     private String gender;
 
     @Enumerated(EnumType.STRING)
