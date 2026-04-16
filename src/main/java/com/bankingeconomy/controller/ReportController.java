@@ -2,6 +2,7 @@ package com.bankingeconomy.controller;
 
 import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
+import com.bankingeconomy.entity.User;
 import com.bankingeconomy.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,7 +30,7 @@ public class ReportController {
 
     @GetMapping("/my-transactions")
     public ResponseData<Map<String, Object>> myTransactions(
-            @AuthenticationPrincipal Jwt jwt,
+            @AuthenticationPrincipal User currentUser,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam(required = false)
@@ -37,7 +38,7 @@ public class ReportController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        String email = jwt.getSubject();
+        String email = currentUser.getEmail();
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<TransactionHistoryItemResponse> result =

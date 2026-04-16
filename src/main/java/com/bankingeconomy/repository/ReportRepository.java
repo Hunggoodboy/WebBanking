@@ -17,7 +17,7 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
 			  AND (:start IS NULL OR t.createdAt >= :start)
 			  AND (:end IS NULL OR t.createdAt <= :end)
 			""")
-	Page<Transaction> findMyTransactionHistory(Long userId,
+	Page<Transaction> findMyTransactionHistory(UUID userId,
 											   LocalDateTime start,
 											   LocalDateTime end,
 											   Pageable pageable);

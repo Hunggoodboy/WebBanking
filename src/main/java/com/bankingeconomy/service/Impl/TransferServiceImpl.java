@@ -14,6 +14,7 @@ import com.bankingeconomy.service.TransferService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -33,16 +34,7 @@ public class TransferServiceImpl implements TransferService {
     private static final String TRANSFER_TOPIC = "transfer-topic";
 
     @Override
-    public TransferResponse initiateTransfer(TransferRequest request) {
-
-        // ── 1. Lấy email từ JWT token của user đang đăng nhập ──────────────
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-
-        // ── 2. Tìm user theo email ──────────────────────────────────────────
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    public TransferResponse initiateTransfer(User currentUser, TransferRequest request) {
 
         // ── 3. Lấy tài khoản ACTIVE của user (lấy tài khoản đầu tiên ACTIVE) ──
         Account fromAccount = accountRepository

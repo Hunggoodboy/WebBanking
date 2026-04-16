@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +32,7 @@ public class ReportServiceImpl implements ReportService {
 				.map(transaction -> mapToHistoryItem(transaction, user.getId()));
 	}
 
-	private TransactionHistoryItemResponse mapToHistoryItem(Transaction transaction, Long currentUserId) {
+	private TransactionHistoryItemResponse mapToHistoryItem(Transaction transaction, UUID currentUserId) {
 		boolean fromMe = transaction.getFromAccount() != null
 				&& transaction.getFromAccount().getUser() != null
 				&& transaction.getFromAccount().getUser().getId().equals(currentUserId);
