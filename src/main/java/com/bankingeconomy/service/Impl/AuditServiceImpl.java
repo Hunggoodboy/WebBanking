@@ -59,6 +59,7 @@ public class AuditServiceImpl implements AuditService {
                 accountNumber, accountNumber);
     }
 
+    @Override
     public List<AuditLog> getAllAudits() {
         return auditLogRepository.findAllByOrderByCreatedAtDesc();
     }
