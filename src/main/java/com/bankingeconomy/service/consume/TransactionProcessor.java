@@ -1,13 +1,11 @@
 package com.bankingeconomy.service.consume;
 
-
 import java.util.UUID;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import com.bankingeconomy.event.TransferEvent;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

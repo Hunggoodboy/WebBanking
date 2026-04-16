@@ -17,6 +17,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -27,8 +28,8 @@ import java.util.List;
 public class User implements UserDetails {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID) // Đổi từ IDENTITY sang UUID ở đây!
+    private UUID id;
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -42,6 +43,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String phone;
 
+    @Column(nullable = false)
+    private String province;
+
+    @Column(nullable = false)
+    private String district;
+
     @Column(name = "identity_card", unique = true, nullable = false)
     private String identityCard;
 
@@ -49,6 +56,11 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    public enum Role {
+        ADMIN,
+        CUSTOMER
+    }
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -72,7 +84,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return "";
+        return getId().toString();
     }
 
     @Override

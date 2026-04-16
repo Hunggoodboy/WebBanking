@@ -3,6 +3,7 @@ package com.bankingeconomy.service.Impl;
 import com.bankingeconomy.dto.request.RegisterRequest;
 import com.bankingeconomy.dto.response.RegisterResponse;
 import com.bankingeconomy.entity.User;
+import com.bankingeconomy.enums.Role;
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.entity.User;
@@ -32,8 +33,11 @@ public class UserServiceImpl implements UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
+                .province(request.getProvince())
+                .district(request.getDistrict())
                 .phone(request.getPhone())
                 .identityCard(request.getIdentityCard())
+                .role(User.Role.valueOf("CUSTOMER"))
                 .build();
 
         userRepository.save(user);

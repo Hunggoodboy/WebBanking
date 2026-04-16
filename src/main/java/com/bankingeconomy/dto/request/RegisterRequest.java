@@ -39,4 +39,10 @@ public class RegisterRequest {
     @NotBlank(message = "Vui lòng nhập lại mật khẩu")
     private String confirmPassword;
 
+    @NotBlank(message = "Vui lòng nhập tỉnh thành")
+    private String province;
+
+    @NotBlank(message = "Vui lòng nhập quận huyện")
+    private String district;
+
 }

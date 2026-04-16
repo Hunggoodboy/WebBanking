@@ -12,9 +12,13 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -24,6 +28,7 @@ public class SecurityConfig {
 
     private final UserDetailServiceCustomizer userDetailsService;
     private final JwtDecoderConfig jwtDecoderConfig;
+    private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
 
     private final String[] WHITE_LIST = {
             "/api/auth/**",
@@ -33,7 +38,8 @@ public class SecurityConfig {
             "/register",
             "/api/mock/**", "/api/hadoop/**",
             "/register",
-            "/api/test-kafka/**"
+            "/api/test-kafka/**",
+            "/api/user/**"
     };
 
     @Bean
@@ -45,7 +51,13 @@ public class SecurityConfig {
                         .requestMatchers(WHITE_LIST).permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoderConfig)));
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoderConfig)
+                                .jwtAuthenticationConverter(customJwtAuthenticationConverter)
+
+                        )
+                );
         return http.build();
     }
 

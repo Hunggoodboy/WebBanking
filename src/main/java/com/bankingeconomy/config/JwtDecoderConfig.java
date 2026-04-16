@@ -39,7 +39,7 @@ public class JwtDecoderConfig implements JwtDecoder {
         log.info("Decoding JWT token: {}", token);
         try {
             if(!jwtService.verifyToken(token)){
-                throw new RuntimeException("Invalid JWT token");
+                throw new RuntimeException("Token này đã bị vô hiệu hóa hoặc hết hạn");
             }
             if(Objects.isNull(nimbusJwtDecoder)){
                 SecretKey secretKeySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HS512");

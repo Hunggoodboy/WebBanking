@@ -3,11 +3,9 @@ package com.bankingeconomy.controller;
 import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.repository.TransactionRepository;
 import com.bankingeconomy.service.HDFSReadWriteService;
-import com.bankingeconomy.service.HdfsService;
-import com.bankingeconomy.service.MapReduceRunnerService;
+import com.bankingeconomy.service.Impl.HdfsServiceImpl;
+import com.bankingeconomy.service.Impl.MapReduceRunnerServiceImpl;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,10 +16,10 @@ import java.util.List;
 @AllArgsConstructor
 public class HadoopController {
 
-    private final HdfsService hdfsService;
-    private final HDFSReadWriteService  hdfsReadWriteService;
+    private final HdfsServiceImpl hdfsService;
+    private final HDFSReadWriteService hdfsReadWriteService;
     private final TransactionRepository transactionRepository;
-    private final MapReduceRunnerService mapReduceRunnerService;
+    private final MapReduceRunnerServiceImpl mapReduceRunnerService;
 
     // API này nhận vào một cái tên và tạo thư mục trên HDFS
     @GetMapping("/api/hadoop/create-dir")
@@ -43,7 +41,7 @@ public class HadoopController {
 
             String month = "2026_04";
 
-            hdfsReadWriteService.writeTransactions(month, transactions);
+            hdfsReadWriteService.writeTransactionsToHdfs(month, transactions);
 
             return "Đã xuất giao dịch lên HDFS cho tháng " + month;
         } catch (Exception e) {

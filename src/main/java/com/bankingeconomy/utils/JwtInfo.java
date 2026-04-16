@@ -11,6 +11,8 @@ import java.util.Date;
 @NoArgsConstructor
 @Builder
 public class JwtInfo {
+    private String userId;
+    private String role;
     private String jwtId;
     private Date issueTime;
     private Date expirationTime;

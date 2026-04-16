@@ -45,7 +45,8 @@ public class JwtServiceImpl implements JwtService {
         String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
+                .subject(String.valueOf(user.getId()))
+                .claim("role", user.getRole())
                 .issueTime(issueTime)
                 .expirationTime(expriredTime)
                 .jwtID(jwtId)
@@ -83,7 +84,8 @@ public class JwtServiceImpl implements JwtService {
         String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
+                .subject(String.valueOf(user.getId()))
+                .claim("role", user.getRole())
                 .issueTime(issueTime)
                 .expirationTime(expriredTime)
                 .jwtID(jwtId)
@@ -134,6 +136,8 @@ public class JwtServiceImpl implements JwtService {
         Date expiredTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
         return JwtInfo.builder()
+                .userId(signedJWT.getJWTClaimsSet().getSubject())
+                .role(signedJWT.getJWTClaimsSet().getStringClaim("role"))
                 .jwtId(jwtId)
                 .issueTime(issueTime)
                 .expirationTime(expiredTime)

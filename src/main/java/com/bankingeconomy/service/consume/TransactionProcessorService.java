@@ -1,12 +1,12 @@
-package com.bankingeconomy.service.consume; 
+package com.bankingeconomy.service.consume;
 
 
 import org.springframework.stereotype.Service;
 
 import com.bankingeconomy.event.TransferEvent;
 import com.bankingeconomy.event.TransferEvent.TransferStatus;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
