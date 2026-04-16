@@ -1,13 +1,15 @@
 package com.bankingeconomy.config;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.springframework.context.annotation.Bean;
-
 import java.io.IOException;
 import java.net.URI;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+
 @org.springframework.context.annotation.Configuration
+@ConditionalOnProperty(name = "hadoop.enabled", havingValue = "true", matchIfMissing = false)
 public class HadoopConfig {
 
     @Bean

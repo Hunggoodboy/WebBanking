@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.bankingeconomy.entity.Notification;
@@ -23,6 +24,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate; // 👈 thêm mới
 
     @Override
     public void sendNotification(String userId, String message, Notification.NotificationType type) {
@@ -37,8 +39,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .createdAt(new Date())
                 .build();
 
+        // 1. Lưu vào DB
         notificationRepository.save(notification);
         log.info("✅ Đã lưu notification cho user {}: {}", userId, message);
+
+        // 2. Push real-time qua WebSocket 
+        messagingTemplate.convertAndSend("/topic/notification/" + userId, message);
+        log.info("📡 Đã push WebSocket tới user {}: {}", userId, message);
     }
 
     @Override
