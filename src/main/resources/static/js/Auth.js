@@ -1,8 +1,9 @@
+const API_ORIGIN = resolveApiOrigin();
 const CONFIG = {
-  LOGIN_URL: "http://localhost:8080/api/auth/login",
-  REGISTER_URL: "http://localhost:8080/api/auth/register",
-  REDIRECT_AFTER_LOGIN: "home.html",
-  REDIRECT_AFTER_REGISTER: "Login.html",
+  LOGIN_URL: `${API_ORIGIN}/api/auth/login`,
+  REGISTER_URL: `${API_ORIGIN}/api/auth/register`,
+  REDIRECT_AFTER_LOGIN: "/historyTransfer",
+  REDIRECT_AFTER_REGISTER: "/login",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -71,9 +72,11 @@ function initLoginForm() {
         // Hiện tại vẫn lưu localStorage theo yêu cầu bài.
       }
 
+      const redirectUrl = resolvePostLoginRedirect(data, payload.email);
+
       setTimeout(() => {
-        window.location.href = CONFIG.REDIRECT_AFTER_LOGIN;
-      }, 800);
+        window.location.href = redirectUrl;
+      }, 500);
     } catch (error) {
       if (!usernameError.textContent && !passwordError.textContent) {
         passwordError.textContent = error.message || "Có lỗi xảy ra khi đăng nhập.";
@@ -367,7 +370,7 @@ function saveAuthData(data) {
 }
 
 function handleLoginApiError(data, refs) {
-  const message = data?.message || "";
+  const message = data?.message || data?.error || "";
 
   if (data?.errors?.username) {
     refs.usernameError.textContent = data.errors.username;
@@ -393,7 +396,7 @@ function handleLoginApiError(data, refs) {
 
 function handleRegisterApiError(data, refs) {
   const errors = data?.errors || {};
-  const message = data?.message || "Đăng ký thất bại.";
+  const message = data?.message || data?.error || "Đăng ký thất bại.";
 
   if (errors.fullName) refs.fullNameError.textContent = errors.fullName;
   if (errors.customerId) refs.customerIdError.textContent = errors.customerId;
@@ -423,4 +426,64 @@ async function parseJsonSafe(response) {
   } catch {
     return { message: text || "Phản hồi từ server không hợp lệ." };
   }
+}
+
+function resolvePostLoginRedirect(data, email) {
+  const fallback = new URL(CONFIG.REDIRECT_AFTER_LOGIN, window.location.origin).toString();
+  const params = new URLSearchParams(window.location.search);
+  const redirectTarget = params.get("redirect");
+
+  let target;
+  try {
+    target = redirectTarget ? new URL(redirectTarget) : new URL(fallback);
+  } catch {
+    target = new URL(fallback);
+  }
+
+  if (target.origin !== window.location.origin) {
+    const token = data?.token || data?.accessToken || data?.data?.token || data?.data?.accessToken;
+    const refreshToken = data?.refreshToken || data?.data?.refreshToken;
+
+    if (token) {
+      target.searchParams.set("token", token);
+    }
+
+    if (refreshToken) {
+      target.searchParams.set("refreshToken", refreshToken);
+    }
+
+    if (email) {
+      target.searchParams.set("authEmail", email);
+    }
+  }
+
+  return target.toString();
+}
+
+function resolveApiOrigin() {
+  const params = new URLSearchParams(window.location.search);
+  const backend = params.get("backend");
+
+  if (backend) {
+    return backend.replace(/\/+$/, "");
+  }
+
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+  const currentOrigin = window.location.origin;
+  const protocol = window.location.protocol;
+  const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+
+  if (!currentOrigin || currentOrigin === "null" || protocol === "file:") {
+    return "http://localhost:8084";
+  }
+
+  if (isLocalHost) {
+    if (port === "8084") {
+      return currentOrigin;
+    }
+    return `http://${hostname}:8084`;
+  }
+
+  return currentOrigin;
 }

@@ -1,9 +1,5 @@
-package com.bankingeconomy.service.consume;
+package com.bankingeconomy.service.consumer;
 
-import java.util.UUID;
-
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.stereotype.Service;
 
 import com.bankingeconomy.event.TransferEvent;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +18,6 @@ public class TransactionProcessor {
         log.info("Received TransferEvent: {}", event);
 
         try {
-            // Generate transactionId (optional tracking)
             UUID transactionId = UUID.randomUUID();
             log.info("Transaction ID: {}", transactionId);
 
