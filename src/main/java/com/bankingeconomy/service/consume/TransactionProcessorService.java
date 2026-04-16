@@ -1,4 +1,4 @@
-package com.bankingeconomy.service.consumer;
+package com.bankingeconomy.service.consume;
 
 import com.bankingeconomy.event.TransferEvent;
 import com.bankingeconomy.event.TransferEvent.TransferStatus;
