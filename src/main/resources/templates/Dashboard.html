@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EBank Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 font-sans text-gray-800">
+  <div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
+    
+    <!-- Header -->
+    <header class="mb-8">
+      <div class="bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl rounded-3xl px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white flex items-center justify-center text-xl font-bold shadow-lg">
+            E
+          </div>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight">EBank</h1>
+            <p class="text-sm text-gray-500">Bảng điều khiển tài chính cá nhân</p>
+          </div>
+        </div>
+
+        <nav class="flex flex-wrap items-center gap-3 text-sm font-medium">
+          <a href="#" class="px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-md">Tổng quan</a>
+          <a href="/transfer" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Chuyển khoản</a>
+          <a href="#" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Lịch sử</a>
+          <a href="#" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Hồ sơ</a>
+        </nav>
+
+        <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-white flex items-center justify-center font-bold">
+            <span id="userInitials">HN</span>
+          </div>
+          <div class="leading-tight">
+            <p id="headerUserName" class="font-semibold">Tên người dùng</p>
+            <p id="headerUserTier" class="text-xs text-gray-500">Khách hàng Premium</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Balance -->
+    <section class="mb-8">
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-indigo-600 to-cyan-500 p-6 md:p-8 text-white shadow-2xl">
+        <div class="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full blur-3xl -translate-y-16 translate-x-16"></div>
+        <div class="absolute bottom-0 left-0 w-52 h-52 bg-cyan-300/20 rounded-full blur-3xl translate-y-10 -translate-x-8"></div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div>
+            <p class="text-white/80 text-sm mb-2">Tổng số dư khả dụng</p>
+            <h2 id="heroTotalBalance" class="text-4xl md:text-5xl font-bold tracking-tight mb-3">125.000.000đ</h2>
+            <p id="heroLastUpdated" class="text-white/80 text-sm">Cập nhật lần cuối: Hôm nay, 10:45</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 min-w-[280px]">
+            <div class="bg-white/15 border border-white/20 rounded-2xl p-4 backdrop-blur-md">
+              <p class="text-sm text-white/80">Thẻ chính</p>
+              <p id="heroPrimaryAccount" class="font-semibold mt-1">•••• 4689</p>
+            </div>
+            <div class="bg-white/15 border border-white/20 rounded-2xl p-4 backdrop-blur-md">
+              <p class="text-sm text-white/80">Tiết kiệm</p>
+              <p id="heroSavingsBalance" class="font-semibold mt-1">45.000.000đ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+      <div class="group bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition duration-300">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-sm text-gray-500">Số dư hiện tại</span>
+          <div class="w-11 h-11 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg">💳</div>
+        </div>
+        <h3 id="summaryCurrentBalance" class="text-3xl font-bold text-gray-800">80.000.000đ</h3>
+        <p id="summaryCurrentBalanceHint" class="text-sm text-emerald-500 mt-2">+2,5% so với tháng trước</p>
+      </div>
+
+      <div class="group bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition duration-300">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-sm text-gray-500">Đã gửi tháng này</span>
+          <div class="w-11 h-11 rounded-2xl bg-red-100 text-red-500 flex items-center justify-center text-lg">↗</div>
+        </div>
+        <h3 id="summarySentAmount" class="text-3xl font-bold text-red-500">18.500.000đ</h3>
+        <p id="summarySentCount" class="text-sm text-gray-500 mt-2">32 giao dịch chuyển đi</p>
+      </div>
+
+      <div class="group bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition duration-300">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-sm text-gray-500">Đã nhận tháng này</span>
+          <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-500 flex items-center justify-center text-lg">↘</div>
+        </div>
+        <h3 id="summaryReceivedAmount" class="text-3xl font-bold text-emerald-500">24.200.000đ</h3>
+        <p id="summaryReceivedCount" class="text-sm text-gray-500 mt-2">18 giao dịch nhận tiền</p>
+      </div>
+
+      <div class="group bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition duration-300">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-sm text-gray-500">Số giao dịch</span>
+          <div class="w-11 h-11 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center text-lg">📊</div>
+        </div>
+        <h3 id="summaryTransactionCount" class="text-3xl font-bold text-cyan-600">50</h3>
+        <p id="summaryTransactionHint" class="text-sm text-gray-500 mt-2">Tăng 12% trong tháng này</p>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="mb-8">
+      <div class="flex flex-wrap gap-4">
+        <a href="/transfer" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition">
+          Chuyển khoản
+        </a>
+        <button class="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition">
+          Nạp tiền
+        </button>
+        <button class="px-6 py-3 rounded-2xl bg-white text-indigo-600 font-semibold border border-indigo-100 shadow-lg hover:bg-indigo-50 hover:scale-105 transition">
+          Xem lịch sử
+        </button>
+        <button class="px-6 py-3 rounded-2xl bg-white text-gray-700 font-semibold border border-slate-200 shadow-lg hover:bg-slate-50 hover:scale-105 transition">
+          Thanh toán hóa đơn
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      
+      <!-- Transactions -->
+      <div class="xl:col-span-2 bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h3 class="text-xl font-bold">Giao dịch gần đây</h3>
+            <p class="text-sm text-gray-500">Theo dõi các hoạt động mới nhất trong tài khoản</p>
+          </div>
+          <button class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Xem tất cả</button>
+        </div>
+
+        <p id="dashboardStatus" class="hidden mb-4 rounded-2xl px-4 py-3 text-sm"></p>
+        <div id="recentTransactions" class="space-y-4">
+          <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 transition">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-500 flex items-center justify-center text-lg">↗</div>
+              <div>
+                <p class="font-semibold">Chuyển đến Nguyễn Văn A</p>
+                <p class="text-sm text-gray-500">12/04/2026 • 09:20</p>
+              </div>
+            </div>
+            <p class="font-bold text-red-500">-2.000.000đ</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        
+        <!-- Accounts -->
+        <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+          <h3 class="text-lg font-bold mb-4">Tài khoản của tôi</h3>
+          
+          <div id="accountsList" class="space-y-4">
+            <div class="rounded-2xl p-4 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-lg">
+              <p class="text-sm text-white/80">Tài khoản thanh toán</p>
+              <p class="text-lg font-bold mt-1">•••• 4689</p>
+              <p class="text-sm mt-2">80.000.000đ</p>
+            </div>
+
+            <div class="rounded-2xl p-4 bg-slate-50 border border-slate-200">
+              <p class="text-sm text-gray-500">Tài khoản tiết kiệm</p>
+              <p class="text-lg font-bold mt-1">•••• 9201</p>
+              <p class="text-sm text-emerald-600 mt-2">45.000.000đ</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">Thông báo</h3>
+            <span id="notificationCount" class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-500 font-semibold">3 mới</span>
+          </div>
+
+          <div id="notificationsList" class="space-y-3 text-sm">
+            <div class="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition">
+              <p class="font-medium">Bạn vừa nhận 5.500.000đ</p>
+              <p class="text-gray-500 mt-1">Từ Trần Thị B • 11/04/2026</p>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition">
+              <p class="font-medium">Ưu đãi hoàn tiền 10%</p>
+              <p class="text-gray-500 mt-1">Áp dụng cho thanh toán hóa đơn</p>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition">
+              <p class="font-medium">Bảo mật tài khoản</p>
+              <p class="text-gray-500 mt-1">Hãy bật xác thực 2 lớp để an toàn hơn</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+  <script src="/js/Banking.js"></script>
+</body>
+</html>

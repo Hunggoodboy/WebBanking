@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transfer UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 flex justify-center items-center font-sans px-4">
+
+  <div class="w-[380px] bg-white/90 backdrop-blur-xl rounded-[28px] shadow-2xl overflow-hidden border border-white/50">
+    
+    <!-- Header -->
+    <div class="relative bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 px-5 pt-5 pb-6 text-white">
+      <div class="flex items-center justify-between">
+        <a href="/dashboard" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl hover:bg-white/30 transition">
+          ←
+        </a>
+        <span class="text-lg font-semibold tracking-wide">Chuyển tiền</span>
+        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm">
+          •••
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <p class="text-white/80 text-sm">Giao dịch an toàn và nhanh chóng</p>
+        <h1 class="text-2xl font-bold mt-1">Chuyển khoản trong nước</h1>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <form id="transferForm" class="px-5 pt-12 pb-5 space-y-5">
+      
+      <!-- Source Account -->
+      <div class="rounded-2xl p-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white shadow-lg">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs text-white/70">Tài khoản nguồn</p>
+            <p id="transferSourceName" class="mt-1 text-lg font-semibold">Nguyễn Văn A</p>
+          </div>
+          <div class="px-3 py-1 rounded-full bg-white/15 text-xs">Chính</div>
+        </div>
+
+        <div class="mt-5">
+          <p id="transferSourceAccount" class="tracking-[0.25em] text-sm text-white/90">**** **** **** 4689</p>
+          <div class="flex justify-between items-end mt-4">
+            <div>
+              <p class="text-xs text-white/60">Số dư khả dụng</p>
+              <p id="transferSourceBalance" class="text-xl font-bold">80.000.000đ</p>
+            </div>
+            <button type="button" class="text-xs px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 transition">
+              Đổi tài khoản
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Receiver -->
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-2" for="receiverAccount">Số tài khoản người nhận</label>
+        <div class="relative">
+          <input 
+            id="receiverAccount"
+            name="receiverAccount"
+            type="text" 
+            placeholder="Nhập số tài khoản"
+            class="w-full rounded-2xl border border-gray-200 bg-slate-50 px-4 py-3.5 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+          />
+          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">👤</span>
+        </div>
+        <p id="receiverAccountError" class="mt-2 text-sm text-red-500 min-h-[20px]"></p>
+        <p id="receiverName" class="text-sm text-emerald-600 min-h-[20px]"></p>
+      </div>
+
+      <!-- Bank -->
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-2" for="bankCode">Ngân hàng nhận</label>
+        <select
+          id="bankCode"
+          name="bankCode"
+          class="w-full rounded-2xl border border-gray-200 bg-slate-50 px-4 py-3.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+        >
+          <option value="">Chọn ngân hàng</option>
+        </select>
+        <p id="bankCodeError" class="mt-2 text-sm text-red-500 min-h-[20px]"></p>
+      </div>
+
+      <!-- Amount -->
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-2" for="amount">Số tiền</label>
+        <div class="relative">
+          <input 
+            id="amount"
+            name="amount"
+            type="number" 
+            placeholder="0"
+            class="w-full rounded-2xl border border-gray-200 bg-slate-50 px-4 py-3.5 pr-16 text-2xl font-bold text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+          />
+          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">VND</span>
+        </div>
+        <p id="amountError" class="mt-2 text-sm text-red-500 min-h-[20px]"></p>
+
+        <!-- Quick amount -->
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button type="button" data-quick-amount="100000" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-medium hover:bg-indigo-100 transition">+100K</button>
+          <button type="button" data-quick-amount="500000" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-medium hover:bg-indigo-100 transition">+500K</button>
+          <button type="button" data-quick-amount="1000000" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-medium hover:bg-indigo-100 transition">+1M</button>
+          <button type="button" data-quick-amount="2000000" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-medium hover:bg-indigo-100 transition">+2M</button>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-2" for="transferDescription">Nội dung chuyển khoản</label>
+        <textarea 
+          id="transferDescription"
+          name="description"
+          rows="3"
+          placeholder="Nhập nội dung giao dịch"
+          class="w-full rounded-2xl border border-gray-200 bg-slate-50 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition resize-none"
+        ></textarea>
+        <p id="descriptionError" class="mt-2 text-sm text-red-500 min-h-[20px]"></p>
+      </div>
+
+      <!-- Fee info -->
+      <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3 flex items-start gap-3">
+        <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+          ✓
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-emerald-700">Phí giao dịch: Miễn phí</p>
+          <p class="text-xs text-emerald-600 mt-1">Giao dịch sẽ được xử lý ngay sau khi xác nhận.</p>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <p id="transferStatus" class="hidden rounded-2xl px-4 py-3 text-sm"></p>
+      <div class="flex gap-3 pt-2">
+        <a href="/dashboard" class="flex-1 flex items-center justify-center py-3 rounded-2xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition shadow-sm">
+          Hủy
+        </a>
+        <button id="transferSubmitBtn" type="submit" class="flex-1 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold shadow-lg hover:scale-[1.02] hover:shadow-xl transition">
+          Tiếp tục
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <script src="/js/Banking.js"></script>
+</body>
+</html>
