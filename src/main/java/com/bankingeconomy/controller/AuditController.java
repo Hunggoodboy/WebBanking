@@ -65,12 +65,7 @@ public class AuditController {
      */
     @GetMapping("/all")
     public ResponseData<List<AuditLog>> getAllAudits() {
-        // Tạm thời trả về thông báo, sau này có thể thêm phân trang
-        return new ResponseData<>(
-                HttpStatus.OK.value(),
-                "Chức năng lấy tất cả audit logs đang được phát triển",
-                null
-        );
+        return new ResponseData<>(200, "Lấy tất cả audit logs thành công", auditService.getAllAudits());
     }
         /**
      * TEST ONLY - Tạo audit log thủ công để kiểm tra Audit + HDFS

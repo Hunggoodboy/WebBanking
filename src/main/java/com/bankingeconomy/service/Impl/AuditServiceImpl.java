@@ -58,4 +58,8 @@ public class AuditServiceImpl implements AuditService {
         return auditLogRepository.findByFromAccountNumberOrToAccountNumberOrderByCreatedAtDesc(
                 accountNumber, accountNumber);
     }
+
+    public List<AuditLog> getAllAudits() {
+        return auditLogRepository.findAllByOrderByCreatedAtDesc();
+    }
 }

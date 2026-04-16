@@ -21,4 +21,6 @@ public interface AuditService {
      * Lấy lịch sử audit theo số tài khoản (from hoặc to)
      */
     List<AuditLog> getAuditByAccountNumber(String accountNumber);
+
+    List<AuditLog> getAllAudits();
 }

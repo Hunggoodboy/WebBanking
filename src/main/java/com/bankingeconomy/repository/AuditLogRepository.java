@@ -20,4 +20,6 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
 
     // Tìm theo trạng thái
     List<AuditLog> findByStatusOrderByCreatedAtDesc(String status);
+
+    List<AuditLog> findAllByOrderByCreatedAtDesc();
 }
