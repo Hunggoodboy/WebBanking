@@ -1,0 +1,23 @@
+package com.bankingeconomy.repository;
+
+import com.bankingeconomy.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByPhone(String phoneNumber);
+
+    boolean existsByPhone(String phoneNumber);
+
+    Optional<User> findByEmail(String username);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByEmailAndIdNot(String email, Long id);
+
+    boolean existsByIdentityCardAndIdNot(String identityCard, Long id);
+
+    int countByEmail(String email);
+}
