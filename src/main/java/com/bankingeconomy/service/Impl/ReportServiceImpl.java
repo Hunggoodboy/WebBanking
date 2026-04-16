@@ -1,10 +1,12 @@
 package com.bankingeconomy.service.Impl;
 
 import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
+import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.entity.User;
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
+import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.ReportRepository;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.ReportService;
@@ -22,6 +24,7 @@ public class ReportServiceImpl implements ReportService {
 
 	private final ReportRepository reportRepository;
 	private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
 
 	@Override
 	public Page<TransactionHistoryItemResponse> getMyTransactionHistory(String email, LocalDateTime start, LocalDateTime end, Pageable pageable) {
@@ -56,5 +59,10 @@ public class ReportServiceImpl implements ReportService {
 				.createdAt(transaction.getCreatedAt())
 				.build();
 	}
+
+    public double getMyBalance(User user) {
+        Account account = accountRepository.findByUserId(user.getId()).orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+        return account.getBalance();
+    }
 
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ReportRepository extends JpaRepository<Transaction, UUID> {
@@ -21,4 +22,5 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
 											   LocalDateTime start,
 											   LocalDateTime end,
 											   Pageable pageable);
+
 }

@@ -1,10 +1,13 @@
 package com.bankingeconomy.controller;
 
+import com.bankingeconomy.dto.request.AccountRequest;
 import com.bankingeconomy.dto.response.BalanceResponse;
 import com.bankingeconomy.dto.response.ResponseData;
+import com.bankingeconomy.entity.User;
 import com.bankingeconomy.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -16,6 +19,11 @@ import java.util.UUID;
 public class AccountController {
 
     private final AccountService accountService;
+
+    @PostMapping("/create")
+    public ResponseData<?> createAccount(@AuthenticationPrincipal User user, AccountRequest request){
+        return accountService.createAccount(user, request);
+    }
 
     // ─────────────────────────────────────────
     // GET /api/accounts/{id}/balance — Xem số dư (Redis cache)

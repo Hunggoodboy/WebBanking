@@ -19,4 +19,8 @@ public class PageController {
     public String historyTransfer() {
         return "historyTransfer";
     }
+    @GetMapping("/")
+    public String home() {return "Dashboard";}
+    @GetMapping("/transfer")
+    public String transfer() {return "Transfer";}
 }

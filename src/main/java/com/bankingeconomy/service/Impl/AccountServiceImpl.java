@@ -1,7 +1,10 @@
 package com.bankingeconomy.service.Impl;
 
+import com.bankingeconomy.dto.request.AccountRequest;
 import com.bankingeconomy.dto.response.BalanceResponse;
+import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.entity.Account;
+import com.bankingeconomy.entity.User;
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
@@ -84,5 +87,27 @@ public class AccountServiceImpl implements AccountService {
                 account.getAccountNumber(), amount, hasEnough);
 
         return hasEnough;
+    }
+    @Override
+    public ResponseData<?> createAccount(User user, AccountRequest request){
+        if(accountRepository.findByAccountNumber(request.getAccountNumber()).isPresent()) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message("Tài khoản đã tồn tại")
+                    .build();
+        }
+        Account account = Account.builder()
+                .user(user)
+                .accountNumber(request.getAccountNumber())
+                .balance(0.0)
+                .status(Account.AccountStatus.ACTIVE)
+                .createdAt(new java.util.Date())
+                .build();
+        accountRepository.save(account);
+        return ResponseData.builder()
+                .status(201)
+                .message("Account created successfully")
+                .data(account.getId())
+                .build();
     }
 }

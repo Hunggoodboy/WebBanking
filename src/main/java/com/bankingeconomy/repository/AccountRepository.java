@@ -1,6 +1,7 @@
 package com.bankingeconomy.repository;
 
 import com.bankingeconomy.entity.Account;
+import org.checkerframework.checker.nullness.Opt;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -8,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AccountRepository extends JpaRepository<Account, UUID> {
-    List<Account> findByUserId(Long userId);
+    Optional<Account> findByUserId(UUID userId);
 
     List<Account> findByUserIdAndStatus(UUID userId, Account.AccountStatus status);
 

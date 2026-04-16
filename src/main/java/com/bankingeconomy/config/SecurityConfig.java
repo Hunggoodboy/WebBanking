@@ -47,6 +47,8 @@ public class SecurityConfig {
             "/register",
             "/api/test-kafka/**",
             "/api/user/**"
+            ,"/",
+            "/my-balance"
     };
 
     @Bean
