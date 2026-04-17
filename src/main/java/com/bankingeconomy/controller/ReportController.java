@@ -2,8 +2,8 @@ package com.bankingeconomy.controller;
 
 import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
+import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
 import com.bankingeconomy.entity.User;
-import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -55,7 +54,29 @@ public class ReportController {
         return new ResponseData<>(200, "Lấy lịch sử giao dịch thành công", data);
     }
 
-    //Số tiền hiện tại của khách
+    @GetMapping("/my-transactions/statistics")
+    public ResponseData<TransactionStatisticsResponse> myTransactionStatistics(
+            @AuthenticationPrincipal User currentUser,
+            @RequestParam(defaultValue = "day") String groupBy,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+        TransactionStatisticsResponse response = reportService.getMyTransactionStatistics(currentUser.getEmail(), start, end, groupBy);
+        return new ResponseData<>(200, "Lấy thống kê giao dịch của người dùng thành công", response);
+    }
+
+    @GetMapping("/admin/dashboard-statistics")
+    public ResponseData<TransactionStatisticsResponse> adminDashboardStatistics(
+            @RequestParam(defaultValue = "day") String groupBy,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+        TransactionStatisticsResponse response = reportService.getAdminDashboardStatistics(start, end, groupBy);
+        return new ResponseData<>(200, "Lấy thống kê dashboard admin thành công", response);
+    }
+
     @GetMapping("/my-balance")
     public ResponseData<Map<String, Object>> myBalance(@AuthenticationPrincipal User currentUser) {
         return new ResponseData<>(200, "Lấy số dư thành công", Map.of("balance", reportService.getMyBalance(currentUser)));

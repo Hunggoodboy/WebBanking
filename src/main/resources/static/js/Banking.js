@@ -7,6 +7,7 @@ const BANKING_CONFIG = {
   MY_BALANCE_ENDPOINT: "/reports/my-balance",
   RECENT_TRANSACTIONS_ENDPOINT: "/reports/my-transactions?page=0&size=5",
   TRANSFER_ENDPOINT: "/v1/transfer/execute",
+  ADMIN_DASHBOARD_PAGE: "/admin/dashboard",
 };
 
 const DEFAULT_NOTIFICATIONS = [
@@ -36,6 +37,7 @@ async function initDashboardPage() {
   const storedUser = readStoredUser();
   if (storedUser) {
     hydrateUserHeader(storedUser);
+    toggleAdminDashboardLinks(storedUser);
   }
 
   const [profileResult, accountsResult, balanceResult, recentTransactionsResult] = await Promise.all([
@@ -55,6 +57,7 @@ async function initDashboardPage() {
   if (user) {
     storeUser(user);
     hydrateUserHeader(user);
+    toggleAdminDashboardLinks(user);
   }
 
   bindAccountRegistrationForm();
@@ -696,4 +699,20 @@ async function parseJsonSafe(response) {
   } catch {
     return { message: text || "Phản hồi từ server không hợp lệ." };
   }
+}
+
+
+function toggleAdminDashboardLinks(user) {
+  const isAdmin = String(user?.role || "").toUpperCase() === "ADMIN";
+  const navLink = document.getElementById("adminDashboardLink");
+  const actionLink = document.getElementById("adminDashboardAction");
+
+  [navLink, actionLink].forEach((element) => {
+    if (!element) return;
+    if (isAdmin) {
+      element.classList.remove("hidden");
+    } else {
+      element.classList.add("hidden");
+    }
+  });
 }

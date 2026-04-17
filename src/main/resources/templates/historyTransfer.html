@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./historyTransfer.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app">
@@ -21,7 +22,7 @@
             và nhận biết nhanh giao dịch vào, ra hoặc chuyển nội bộ.
           </p>
         </div>
-        <button class="nav-btn" id="openProfileBtn" type="button">Xem hồ sơ cá nhân</button>
+        <a class="nav-btn" id="openProfileBtn" href="/profile">Xem hồ sơ cá nhân</a>
       </div>
       <div class="hero-tags">
         <span class="tag">Tra cứu theo ngày</span>
@@ -95,6 +96,51 @@
       <div class="summary-box">
         <div class="summary-label">Tổng số tiền (trang này)</div>
         <div class="summary-value" id="amountTotal">0 VND</div>
+      </div>
+    </section>
+
+
+    <section class="statistics-card">
+      <div class="statistics-head">
+        <div>
+          <h2 class="section-title">Thống kê giao dịch theo ngày, tháng, năm</h2>
+          <p class="section-subtitle">Biểu đồ thống kê được tải riêng bằng RESTful API để bạn xem nhanh xu hướng giao dịch trên tài khoản của mình.</p>
+        </div>
+        <div class="statistics-note" id="statisticsScopeNote">Đang tải dữ liệu thống kê giao dịch.</div>
+      </div>
+
+      <div class="statistics-summary-grid">
+        <div class="statistics-summary-box">
+          <div class="statistics-summary-label">Tổng tiền vào</div>
+          <div class="statistics-summary-value in" id="statisticsTotalIn">0 VND</div>
+        </div>
+        <div class="statistics-summary-box">
+          <div class="statistics-summary-label">Tổng tiền ra</div>
+          <div class="statistics-summary-value out" id="statisticsTotalOut">0 VND</div>
+        </div>
+        <div class="statistics-summary-box">
+          <div class="statistics-summary-label">Biến động ròng</div>
+          <div class="statistics-summary-value" id="statisticsNetAmount">0 VND</div>
+        </div>
+        <div class="statistics-summary-box">
+          <div class="statistics-summary-label">Tổng giá trị giao dịch</div>
+          <div class="statistics-summary-value" id="statisticsVolume">0 VND</div>
+        </div>
+      </div>
+
+      <div class="statistics-chart-grid">
+        <div class="statistics-panel">
+          <h3 class="statistics-panel-title">Số lượng giao dịch theo mốc thời gian</h3>
+          <div class="chart-box">
+            <canvas id="statisticsCountChart"></canvas>
+          </div>
+        </div>
+        <div class="statistics-panel">
+          <h3 class="statistics-panel-title">Dòng tiền vào / ra theo mốc thời gian</h3>
+          <div class="chart-box">
+            <canvas id="statisticsAmountChart"></canvas>
+          </div>
+        </div>
       </div>
     </section>
 

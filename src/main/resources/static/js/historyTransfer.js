@@ -1,6 +1,7 @@
 const BACKEND_ORIGIN = resolveBackendOrigin();
 const API_BASE = resolveApiBase();
 const MY_TRANSACTIONS_API = `${API_BASE}/reports/my-transactions`;
+const USER_STATISTICS_API = `${API_BASE}/reports/my-transactions/statistics`;
 const LOGIN_ROUTE = resolvePageRoute("/login");
 const PROFILE_ROUTE = resolvePageRoute("/profile");
 
@@ -9,6 +10,9 @@ const DEFAULT_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const MAX_VISIBLE_PAGE_BUTTONS = 7;
 const ALL_TRANSACTIONS_OPTION = "ALL_TRANSACTIONS";
+
+let statisticsCountChart = null;
+let statisticsAmountChart = null;
 
 const historyState = {
   page: DEFAULT_PAGE,
@@ -28,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  await loadHistory();
+  await Promise.all([loadHistory(), loadStatistics()]);
 });
 
 function bindHistoryActions() {
@@ -38,6 +42,7 @@ function bindHistoryActions() {
 
   document.getElementById("accountFilter")?.addEventListener("change", () => {
     loadHistory(historyState.filters, DEFAULT_PAGE);
+    loadStatistics(historyState.filters);
   });
 
   document.getElementById("filterType")?.addEventListener("change", updateInputMode);
@@ -264,6 +269,7 @@ function applyFilters() {
   }
 
   loadHistory(nextFilters, DEFAULT_PAGE);
+  loadStatistics(nextFilters);
 }
 
 function resetFilters() {
@@ -274,6 +280,7 @@ function resetFilters() {
 
   updateInputMode();
   loadHistory({}, DEFAULT_PAGE);
+  loadStatistics({});
 }
 
 function renderTransactions(transactions, totalElements) {
@@ -686,6 +693,178 @@ function getDateOfISOWeek(week, year) {
   }
   weekStart.setHours(0, 0, 0, 0);
   return weekStart;
+}
+
+async function loadStatistics(filters = historyState.filters) {
+  if (!getToken()) {
+    redirectToLoginPage();
+    return;
+  }
+
+  const normalizedFilters = normalizeFilters(filters);
+  const groupBy = deriveStatisticsGroupBy();
+  const query = new URLSearchParams();
+  query.set("groupBy", groupBy);
+
+  if (normalizedFilters.start) {
+    query.set("start", String(normalizedFilters.start));
+  }
+  if (normalizedFilters.end) {
+    query.set("end", String(normalizedFilters.end));
+  }
+
+  setStatisticsNote("Đang tải dữ liệu thống kê giao dịch.");
+
+  try {
+    const response = await apiRequest(`${USER_STATISTICS_API}?${query.toString()}`, { method: "GET" });
+    const payload = extractStatisticsPayload(response);
+    renderStatisticsSummary(payload.summary);
+    renderStatisticsCharts(payload.points);
+    setStatisticsNote(buildStatisticsNote(groupBy, normalizedFilters, payload.summary));
+  } catch (error) {
+    if (error?.authExpired) {
+      redirectToLoginPage();
+      return;
+    }
+    renderStatisticsSummary(null);
+    renderStatisticsCharts([]);
+    setStatisticsNote(error.message || "Không tải được dữ liệu thống kê giao dịch.", true);
+  }
+}
+
+function deriveStatisticsGroupBy() {
+  const filterType = document.getElementById("filterType")?.value || "day";
+  if (filterType === "month" || filterType === "year") {
+    return filterType;
+  }
+  return "day";
+}
+
+function extractStatisticsPayload(response) {
+  const root = response ?? {};
+  return root.data ?? root;
+}
+
+function renderStatisticsSummary(summary) {
+  const safeSummary = summary || {};
+  const totalIn = Number(safeSummary.totalIn || 0);
+  const totalOut = Number(safeSummary.totalOut || 0);
+  const netAmount = Number(safeSummary.netAmount || 0);
+  const totalAmount = Number(safeSummary.totalAmount || 0);
+
+  const totalInElement = document.getElementById("statisticsTotalIn");
+  const totalOutElement = document.getElementById("statisticsTotalOut");
+  const netAmountElement = document.getElementById("statisticsNetAmount");
+  const volumeElement = document.getElementById("statisticsVolume");
+
+  if (totalInElement) totalInElement.textContent = formatCurrency(totalIn);
+  if (totalOutElement) totalOutElement.textContent = formatCurrency(totalOut);
+  if (netAmountElement) netAmountElement.textContent = formatCurrency(netAmount);
+  if (volumeElement) volumeElement.textContent = formatCurrency(totalAmount);
+}
+
+function renderStatisticsCharts(points) {
+  const labels = Array.isArray(points) ? points.map((item) => item.label) : [];
+  const transactionCounts = Array.isArray(points) ? points.map((item) => Number(item.totalTransactions || 0)) : [];
+  const totalInValues = Array.isArray(points) ? points.map((item) => Number(item.totalIn || 0)) : [];
+  const totalOutValues = Array.isArray(points) ? points.map((item) => Number(item.totalOut || 0)) : [];
+
+  const countCanvas = document.getElementById("statisticsCountChart");
+  const amountCanvas = document.getElementById("statisticsAmountChart");
+  if (!countCanvas || !amountCanvas || typeof Chart === "undefined") {
+    return;
+  }
+
+  if (statisticsCountChart) {
+    statisticsCountChart.destroy();
+  }
+  if (statisticsAmountChart) {
+    statisticsAmountChart.destroy();
+  }
+
+  statisticsCountChart = new Chart(countCanvas.getContext("2d"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Số giao dịch",
+          data: transactionCounts,
+          tension: 0.25,
+          fill: false,
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+
+  statisticsAmountChart = new Chart(amountCanvas.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Tiền vào",
+          data: totalInValues,
+          borderWidth: 1,
+        },
+        {
+          label: "Tiền ra",
+          data: totalOutValues,
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
+function buildStatisticsNote(groupBy, filters, summary) {
+  const normalizedGroupBy = String(groupBy || "day").toLowerCase();
+  const groupText = normalizedGroupBy === "month" ? "theo tháng" : normalizedGroupBy === "year" ? "theo năm" : "theo ngày";
+  const totalTransactions = Number(summary?.totalTransactions || 0);
+  const hasRange = filters?.start && filters?.end;
+  if (!hasRange) {
+    return `Đang hiển thị thống kê ${groupText}. Tổng cộng ${totalTransactions} giao dịch phù hợp với điều kiện hiện tại.`;
+  }
+
+  return `Đang hiển thị thống kê ${groupText} từ ${formatDisplayDate(filters.start)} đến ${formatDisplayDate(filters.end)}. Tổng cộng ${totalTransactions} giao dịch.`;
+}
+
+function setStatisticsNote(message, isError = false) {
+  const note = document.getElementById("statisticsScopeNote");
+  if (!note) {
+    return;
+  }
+  note.textContent = message;
+  note.className = `statistics-note${isError ? " error" : ""}`;
 }
 
 async function apiRequest(url, options = {}) {

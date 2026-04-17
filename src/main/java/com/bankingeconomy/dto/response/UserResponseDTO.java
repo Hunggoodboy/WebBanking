@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.checkerframework.checker.units.qual.A;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -19,5 +20,8 @@ public class UserResponseDTO {
     private String phone;
     private String province;
     private String district;
+    private String identityCard;
+    private String gender;
     private String role;
+    private LocalDateTime createdAt;
 }
