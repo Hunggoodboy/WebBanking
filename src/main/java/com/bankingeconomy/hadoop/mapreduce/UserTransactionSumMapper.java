@@ -20,7 +20,7 @@ public class UserTransactionSumMapper extends Mapper<LongWritable, Text, Text, I
 
         String userId = recordDatas[0].trim();
         String date = recordDatas[3].trim();
-        String yearMonth = date.substring(0, 6);
+        String yearMonth = date.substring(0, 7);
         int amount = Integer.parseInt(recordDatas[4].trim());
 
         // Tạo key theo (userid_tháng)
