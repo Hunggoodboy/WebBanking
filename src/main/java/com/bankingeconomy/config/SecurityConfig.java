@@ -45,6 +45,9 @@ public class SecurityConfig {
             "/login",
             "/api/mock/**", "/api/hadoop/**",
             "/register",
+            "/dashboard",
+            "/transfer",
+            "/beneficiaries",
             "/api/test-kafka/**",
             "/api/user/**"
             ,"/",

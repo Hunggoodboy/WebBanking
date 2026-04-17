@@ -1,6 +1,8 @@
 package com.bankingeconomy.service.Impl;
 
 import com.bankingeconomy.dto.request.AccountRequest;
+import com.bankingeconomy.dto.response.AccountLookupResponse;
+import com.bankingeconomy.dto.response.AccountSummaryResponse;
 import com.bankingeconomy.dto.response.BalanceResponse;
 import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.entity.Account;
@@ -14,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -90,7 +94,25 @@ public class AccountServiceImpl implements AccountService {
     }
     @Override
     public ResponseData<?> createAccount(User user, AccountRequest request){
-        if(accountRepository.findByAccountNumber(request.getAccountNumber()).isPresent()) {
+        String accountNumber = request != null && request.getAccountNumber() != null
+                ? request.getAccountNumber().trim()
+                : "";
+
+        if (accountNumber.isBlank()) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message("Vui lòng nhập số tài khoản muốn đăng ký")
+                    .build();
+        }
+
+        if (!accountNumber.matches("\\d{6,20}")) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message("Số tài khoản phải gồm từ 6 đến 20 chữ số")
+                    .build();
+        }
+
+        if(accountRepository.findByAccountNumber(accountNumber).isPresent()) {
             return ResponseData.builder()
                     .status(400)
                     .message("Tài khoản đã tồn tại")
@@ -98,7 +120,7 @@ public class AccountServiceImpl implements AccountService {
         }
         Account account = Account.builder()
                 .user(user)
-                .accountNumber(request.getAccountNumber())
+                .accountNumber(accountNumber)
                 .balance(0.0)
                 .status(Account.AccountStatus.ACTIVE)
                 .createdAt(new java.util.Date())
@@ -108,6 +130,49 @@ public class AccountServiceImpl implements AccountService {
                 .status(201)
                 .message("Account created successfully")
                 .data(account.getId())
+                .build();
+    }
+
+    @Override
+    public List<AccountSummaryResponse> getMyAccounts(User user) {
+        List<Account> accounts = accountRepository.findAll().stream()
+                .filter(account -> account.getUser() != null && account.getUser().getId().equals(user.getId()))
+                .sorted(Comparator.comparing(Account::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+
+        return java.util.stream.IntStream.range(0, accounts.size())
+                .mapToObj(index -> {
+                    Account account = accounts.get(index);
+                    boolean primary = index == 0;
+                    Double cachedBalance = balanceCacheService.getCachedBalance(account.getId());
+                    double balance = cachedBalance != null ? cachedBalance : account.getBalance();
+
+                    if (cachedBalance == null) {
+                        balanceCacheService.cacheBalance(account.getId(), balance);
+                    }
+
+                    return AccountSummaryResponse.builder()
+                            .id(account.getId())
+                            .accountNumber(account.getAccountNumber())
+                            .balance(balance)
+                            .status(account.getStatus() != null ? account.getStatus().name() : "")
+                            .name(primary ? "Tài khoản thanh toán" : "Tài khoản phụ")
+                            .primary(primary)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    public AccountLookupResponse lookupByAccountNumber(String accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        return AccountLookupResponse.builder()
+                .id(account.getId())
+                .accountNumber(account.getAccountNumber())
+                .accountHolderName(account.getUser() != null ? account.getUser().getFullName() : "Không rõ chủ tài khoản")
+                .status(account.getStatus() != null ? account.getStatus().name() : "")
                 .build();
     }
 }

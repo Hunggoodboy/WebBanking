@@ -45,4 +45,44 @@ public class RegisterRequest {
     @NotBlank(message = "Vui lòng nhập quận huyện")
     private String district;
 
+    public void setFullName(String fullName) {
+        this.fullName = normalizeText(fullName);
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone == null ? null : phone.trim();
+    }
+
+    public void setIdentityCard(String identityCard) {
+        this.identityCard = identityCard == null ? null : identityCard.trim();
+    }
+
+    public void setEmail(String email) {
+        this.email = email == null ? null : email.trim();
+    }
+
+    public void setPassword(String password) {
+        this.password = password == null ? null : password.trim();
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword == null ? null : confirmPassword.trim();
+    }
+
+    public void setProvince(String province) {
+        this.province = normalizeText(province);
+    }
+
+    public void setDistrict(String district) {
+        this.district = normalizeText(district);
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
 }

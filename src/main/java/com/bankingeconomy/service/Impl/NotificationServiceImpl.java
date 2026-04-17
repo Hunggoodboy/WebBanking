@@ -28,7 +28,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendNotification(String userId, String message, Notification.NotificationType type) {
-        User user = userRepository.findById(Long.parseLong(userId))
+        User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + userId));
 
         Notification notification = Notification.builder()
@@ -49,7 +49,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Page<Notification> getByUser(Long userId, Pageable pageable) {
+    public Page<Notification> getByUser(UUID userId, Pageable pageable) {
         return notificationRepository.findByUserId(userId, pageable);
     }
 

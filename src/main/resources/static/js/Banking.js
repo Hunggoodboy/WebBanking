@@ -1,7 +1,11 @@
 const BANKING_CONFIG = {
   API_BASE_URL: `${window.location.origin}/api`,
-  PROFILE_ENDPOINT: "/auth/me",
+  PROFILE_ENDPOINT: "/user/me",
   ACCOUNTS_ENDPOINT: "/accounts/me",
+  ACCOUNT_CREATE_ENDPOINT: "/accounts/create",
+  ACCOUNT_LOOKUP_ENDPOINT: "/accounts/lookup",
+  MY_BALANCE_ENDPOINT: "/reports/my-balance",
+  RECENT_TRANSACTIONS_ENDPOINT: "/reports/my-transactions?page=0&size=5",
   TRANSFER_ENDPOINT: "/v1/transfer/execute",
 };
 
@@ -34,13 +38,17 @@ async function initDashboardPage() {
     hydrateUserHeader(storedUser);
   }
 
-  const [profileResult, accountsResult] = await Promise.all([
+  const [profileResult, accountsResult, balanceResult, recentTransactionsResult] = await Promise.all([
     fetchJson(BANKING_CONFIG.PROFILE_ENDPOINT),
     fetchJson(BANKING_CONFIG.ACCOUNTS_ENDPOINT),
+    fetchJson(BANKING_CONFIG.MY_BALANCE_ENDPOINT),
+    fetchJson(BANKING_CONFIG.RECENT_TRANSACTIONS_ENDPOINT),
   ]);
 
   const user = extractUser(profileResult.data) || storedUser;
   const accounts = extractAccounts(accountsResult.data);
+  const backendBalance = extractBalance(balanceResult.data);
+  const recentTransactions = extractRecentTransactions(recentTransactionsResult.data);
   const primaryAccount = pickPrimaryAccount(accounts);
   const savingsAccount = pickSavingsAccount(accounts);
 
@@ -49,18 +57,27 @@ async function initDashboardPage() {
     hydrateUserHeader(user);
   }
 
-  renderDashboardSummary(accounts, primaryAccount, savingsAccount);
+  bindAccountRegistrationForm();
+  toggleAccountRegistrationSection(!accounts.length);
+  renderDashboardSummary(accounts, primaryAccount, savingsAccount, recentTransactions, backendBalance);
+  renderRecentTransactions(recentTransactions);
 
-  if (!accountsResult.ok) {
+  if (!accountsResult.ok && !balanceResult.ok) {
     showBanner(
       "dashboardStatus",
-      "Không lấy được dữ liệu tài khoản từ backend. Trang đang hiển thị dữ liệu mặc định.",
+      "Không lấy được dữ liệu tài khoản từ backend. Dashboard đang hiển thị số dư dự phòng.",
       "warning",
     );
-  } else if (!accounts.length) {
+  } else if (!accounts.length && !Number.isFinite(backendBalance) && !recentTransactionsResult.ok) {
     showBanner(
       "dashboardStatus",
-      "Bạn chưa có tài khoản ngân hàng nào để hiển thị trên dashboard.",
+      "Chưa có dữ liệu tài khoản và giao dịch để hiển thị trên dashboard.",
+      "warning",
+    );
+  } else if (!recentTransactionsResult.ok) {
+    showBanner(
+      "dashboardStatus",
+      "Không lấy được giao dịch gần đây từ backend.",
       "warning",
     );
   } else {
@@ -78,6 +95,8 @@ async function initTransferPage() {
   const amountInput = document.getElementById("amount");
   const submitBtn = document.getElementById("transferSubmitBtn");
   const receiverAccountInput = document.getElementById("receiverAccount");
+  const bankCodeSelect = document.getElementById("bankCode");
+  let receiverLookup = null;
 
   const [profileResult, accountsResult] = await Promise.all([
     fetchJson(BANKING_CONFIG.PROFILE_ENDPOINT),
@@ -98,6 +117,8 @@ async function initTransferPage() {
     setText("transferSourceBalance", formatCurrency(primaryAccount.balance));
   }
 
+  populateTransferBankOptions(bankCodeSelect);
+
   document.querySelectorAll("[data-quick-amount]").forEach((button) => {
     button.addEventListener("click", () => {
       const current = Number(amountInput.value || 0);
@@ -107,7 +128,32 @@ async function initTransferPage() {
   });
 
   receiverAccountInput.addEventListener("input", () => {
+    receiverLookup = null;
     clearTransferMessages();
+  });
+
+  receiverAccountInput.addEventListener("blur", async () => {
+    const accountNumber = receiverAccountInput.value.trim();
+    if (!accountNumber) {
+      return;
+    }
+
+    setText("receiverName", "Đang tra cứu người nhận...");
+    const lookupResult = await fetchJson(
+      `${BANKING_CONFIG.ACCOUNT_LOOKUP_ENDPOINT}?accountNumber=${encodeURIComponent(accountNumber)}`,
+      { method: "GET" },
+    );
+
+    if (!lookupResult.ok) {
+      receiverLookup = null;
+      setText("receiverAccountError", lookupResult.message || "Không tìm thấy tài khoản người nhận.");
+      setText("receiverName", "");
+      return;
+    }
+
+    receiverLookup = extractLookupAccount(lookupResult.data);
+    const receiverName = receiverLookup?.accountHolderName || "Không rõ chủ tài khoản";
+    setText("receiverName", `Người nhận: ${receiverName}`);
   });
 
   form.addEventListener("submit", async (event) => {
@@ -120,7 +166,7 @@ async function initTransferPage() {
       description: document.getElementById("transferDescription").value.trim(),
     };
 
-    if (!validateTransferPayload(payload, primaryAccount)) {
+    if (!validateTransferPayload(payload, primaryAccount, receiverLookup)) {
       return;
     }
 
@@ -154,25 +200,35 @@ async function initTransferPage() {
   });
 }
 
-function renderDashboardSummary(accounts, primaryAccount, savingsAccount) {
-  const totalBalance = sumAccountBalances(accounts);
+function renderDashboardSummary(accounts, primaryAccount, savingsAccount, recentTransactions = [], backendBalance = NaN) {
+  const totalBalance = accounts.length ? sumAccountBalances(accounts) : normalizeAmount(backendBalance);
+  const sentTransactions = recentTransactions.filter((item) => normalizeDirection(item.direction) === "OUT");
+  const receivedTransactions = recentTransactions.filter((item) => normalizeDirection(item.direction) === "IN");
+  const sentAmount = sentTransactions.reduce((total, item) => total + normalizeAmount(item.amount), 0);
+  const receivedAmount = receivedTransactions.reduce((total, item) => total + normalizeAmount(item.amount), 0);
+  const currentBalance = primaryAccount ? normalizeAmount(primaryAccount.balance) : totalBalance;
 
   setText("heroTotalBalance", formatCurrency(totalBalance));
   setText("heroLastUpdated", `Cập nhật lần cuối: ${formatDateTime(new Date())}`);
   setText("heroPrimaryAccount", maskAccountNumber(primaryAccount?.accountNumber));
   setText("heroSavingsBalance", formatCurrency(savingsAccount?.balance || 0));
 
-  setText("summaryCurrentBalance", formatCurrency(primaryAccount?.balance || 0));
+  setText("summaryCurrentBalance", formatCurrency(currentBalance));
   setText(
     "summaryCurrentBalanceHint",
     `${accounts.length} tài khoản đang hoạt động`,
   );
-  setText("summarySentAmount", formatCurrency(0));
-  setText("summarySentCount", "0 giao dịch chuyển đi");
-  setText("summaryReceivedAmount", formatCurrency(0));
-  setText("summaryReceivedCount", "0 giao dịch nhận tiền");
-  setText("summaryTransactionCount", "0");
-  setText("summaryTransactionHint", "Dữ liệu giao dịch sẽ hiển thị khi backend bổ sung API lịch sử");
+  setText("summarySentAmount", formatCurrency(sentAmount));
+  setText("summarySentCount", `${sentTransactions.length} giao dịch chuyển đi`);
+  setText("summaryReceivedAmount", formatCurrency(receivedAmount));
+  setText("summaryReceivedCount", `${receivedTransactions.length} giao dịch nhận tiền`);
+  setText("summaryTransactionCount", String(recentTransactions.length));
+  setText(
+    "summaryTransactionHint",
+    recentTransactions.length
+      ? "Tổng hợp từ các giao dịch gần đây lấy từ backend"
+      : "Chưa có giao dịch gần đây để hiển thị",
+  );
 }
 
 async function fetchJson(endpoint, options = {}) {
@@ -246,6 +302,32 @@ function extractAccounts(data) {
   }));
 }
 
+function extractBalance(data) {
+  const value = data?.balance ?? data?.data?.balance ?? data?.data ?? data;
+  return Number(value);
+}
+
+function extractRecentTransactions(data) {
+  const items = data?.items || data?.data?.items || data?.data || data;
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((item) => ({
+    transactionId: item.transactionId || "",
+    direction: item.direction || "",
+    counterpartyAccount: item.counterpartyAccount || "",
+    amount: normalizeAmount(item.amount),
+    description: item.description || "",
+    status: item.status || "",
+    createdAt: item.createdAt || null,
+  }));
+}
+
+function extractLookupAccount(data) {
+  return data?.account || data?.data?.account || data?.data || data || null;
+}
+
 function pickPrimaryAccount(accounts) {
   return accounts.find((account) => account.primary) || accounts[0] || null;
 }
@@ -264,13 +346,99 @@ function hydrateUserHeader(user) {
 
   const name = user.fullName || user.name || user.username || "Tên người dùng";
   setText("headerUserName", name);
-  setText("headerUserTier", user.tier || user.customerType || "Khách hàng ngân hàng số");
+  setText("headerUserTier", resolveUserSubtitle(user));
   setText("userInitials", getInitials(name));
+}
+
+function bindAccountRegistrationForm() {
+  const form = document.getElementById("accountRegistrationForm");
+  if (!form || form.dataset.bound === "true") return;
+
+  const accountNumberInput = document.getElementById("accountNumber");
+  const submitButton = document.getElementById("accountRegistrationBtn");
+  form.dataset.bound = "true";
+
+  accountNumberInput?.addEventListener("input", () => {
+    accountNumberInput.value = accountNumberInput.value.replace(/[^\d]/g, "");
+    setText("accountRegistrationError", "");
+    setText("accountRegistrationSuccess", "");
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const accountNumber = String(accountNumberInput?.value || "").trim();
+    setText("accountRegistrationError", "");
+    setText("accountRegistrationSuccess", "");
+
+    if (!accountNumber) {
+      setText("accountRegistrationError", "Vui lòng nhập số tài khoản muốn đăng ký.");
+      return;
+    }
+
+    if (!/^\d{6,20}$/.test(accountNumber)) {
+      setText("accountRegistrationError", "Số tài khoản cần từ 6 đến 20 chữ số.");
+      return;
+    }
+
+    setButtonState(submitButton, true, "Đang tạo...");
+
+    const createResult = await fetchJson(BANKING_CONFIG.ACCOUNT_CREATE_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify({ accountNumber }),
+    });
+
+    if (!createResult.ok) {
+      const errorMessage = createResult.data?.errors?.accountNumber
+        || createResult.data?.data?.errors?.accountNumber
+        || createResult.message
+        || "Không thể tạo tài khoản lúc này.";
+      setText("accountRegistrationError", errorMessage);
+      setButtonState(submitButton, false, "Tạo tài khoản");
+      return;
+    }
+
+    setText(
+      "accountRegistrationSuccess",
+      createResult.message || "Đăng ký tài khoản thành công. Dashboard đang cập nhật dữ liệu...",
+    );
+    setButtonState(submitButton, false, "Tạo tài khoản");
+
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 900);
+  });
+}
+
+function toggleAccountRegistrationSection(visible) {
+  const section = document.getElementById("accountRegistrationSection");
+  if (!section) return;
+  section.classList.toggle("hidden", !visible);
+}
+
+function resolveUserSubtitle(user) {
+  const role = String(user?.role || "").toUpperCase();
+  if (role === "ADMIN") {
+    return "Quản trị viên hệ thống";
+  }
+  if (user?.province || user?.district) {
+    return [user.district, user.province].filter(Boolean).join(", ");
+  }
+  return "Khách hàng ngân hàng số";
 }
 
 function renderAccounts(accounts) {
   const container = document.getElementById("accountsList");
-  if (!container || !accounts.length) return;
+  if (!container) return;
+
+  if (!accounts.length) {
+    container.innerHTML = `
+      <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+        Bạn chưa có tài khoản nào. Hãy tạo tài khoản để xem số dư và giao dịch tại dashboard.
+      </div>
+    `;
+    return;
+  }
 
   container.innerHTML = accounts.slice(0, 3).map((account, index) => {
     const primary = index === 0;
@@ -290,6 +458,63 @@ function renderAccounts(accounts) {
   }).join("");
 }
 
+function renderRecentTransactions(transactions) {
+  const container = document.getElementById("recentTransactions");
+  if (!container) return;
+
+  if (!transactions.length) {
+    container.innerHTML = `
+      <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm text-slate-500">
+        Chưa có giao dịch gần đây từ backend để hiển thị.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = transactions.map((item) => {
+    const outgoing = normalizeDirection(item.direction) === "OUT";
+    const incoming = normalizeDirection(item.direction) === "IN";
+    const amountClass = outgoing ? "text-red-500" : incoming ? "text-emerald-500" : "text-slate-700";
+    const iconClass = outgoing
+      ? "bg-red-100 text-red-500"
+      : incoming
+        ? "bg-emerald-100 text-emerald-500"
+        : "bg-slate-100 text-slate-500";
+    const icon = outgoing ? "↗" : incoming ? "↘" : "•";
+    const title = buildTransactionTitle(item);
+
+    return `
+      <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 transition">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl ${iconClass} flex items-center justify-center text-lg">${icon}</div>
+          <div>
+            <p class="font-semibold">${escapeHtml(title)}</p>
+            <p class="text-sm text-gray-500">${escapeHtml(formatDateTime(item.createdAt))}</p>
+          </div>
+        </div>
+        <p class="font-bold ${amountClass}">${formatSignedAmount(item.amount, item.direction)}</p>
+      </div>
+    `;
+  }).join("");
+}
+
+function buildTransactionTitle(item) {
+  const account = maskAccountNumber(item.counterpartyAccount);
+  const description = String(item.description || "").trim();
+  if (description) {
+    return description;
+  }
+
+  const direction = normalizeDirection(item.direction);
+  if (direction === "OUT") {
+    return `Chuyển đến ${account}`;
+  }
+  if (direction === "IN") {
+    return `Nhận từ ${account}`;
+  }
+  return `Giao dịch với ${account}`;
+}
+
 function renderNotifications(notifications) {
   const countBadge = document.getElementById("notificationCount");
   const container = document.getElementById("notificationsList");
@@ -304,11 +529,14 @@ function renderNotifications(notifications) {
   `).join("");
 }
 
-function validateTransferPayload(payload, primaryAccount) {
+function validateTransferPayload(payload, primaryAccount, receiverLookup) {
   let valid = true;
 
   if (!payload.toAccountNumber) {
     setText("receiverAccountError", "Vui lòng nhập số tài khoản người nhận.");
+    valid = false;
+  } else if (!receiverLookup || receiverLookup.accountNumber !== payload.toAccountNumber) {
+    setText("receiverAccountError", "Vui lòng tra cứu và xác nhận đúng tài khoản người nhận.");
     valid = false;
   }
 
@@ -326,6 +554,14 @@ function validateTransferPayload(payload, primaryAccount) {
   }
 
   return valid;
+}
+
+function populateTransferBankOptions(select) {
+  if (!select) return;
+  select.innerHTML = `
+    <option value="EBANK" selected>EBank</option>
+  `;
+  select.disabled = true;
 }
 
 function handleTransferApiError(data) {
@@ -386,8 +622,15 @@ function storeUser(user) {
 }
 
 function formatCurrency(value) {
-  const amount = Number(value || 0);
+  const amount = normalizeAmount(value);
   return `${amount.toLocaleString("vi-VN")}đ`;
+}
+
+function formatSignedAmount(value, direction) {
+  const amount = normalizeAmount(value);
+  const normalizedDirection = normalizeDirection(direction);
+  const sign = normalizedDirection === "OUT" ? "-" : normalizedDirection === "IN" ? "+" : "";
+  return `${sign}${formatCurrency(amount)}`;
 }
 
 function formatDateTime(value) {
@@ -405,6 +648,15 @@ function formatDateTime(value) {
 
 function sumAccountBalances(accounts) {
   return accounts.reduce((total, account) => total + Number(account.balance || 0), 0);
+}
+
+function normalizeAmount(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function normalizeDirection(direction) {
+  return String(direction || "").toUpperCase();
 }
 
 function maskAccountNumber(value) {

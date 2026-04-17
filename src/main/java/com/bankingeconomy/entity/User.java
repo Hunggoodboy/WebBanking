@@ -1,6 +1,5 @@
 package com.bankingeconomy.entity;
 
-
 import com.bankingeconomy.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

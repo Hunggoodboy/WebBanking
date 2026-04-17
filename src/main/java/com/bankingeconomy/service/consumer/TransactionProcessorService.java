@@ -1,7 +1,4 @@
-package com.bankingeconomy.service.consume;
-
-
-import org.springframework.stereotype.Service;
+package com.bankingeconomy.service.consumer;
 
 import com.bankingeconomy.event.TransferEvent;
 import com.bankingeconomy.event.TransferEvent.TransferStatus;

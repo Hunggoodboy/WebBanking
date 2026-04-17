@@ -14,7 +14,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionProcessor {
 
-    private final com.bankingeconomy.service.consume.TransactionProcessorService transactionProcessorService;
+    private final TransactionProcessorService transactionProcessorService;
 
     @KafkaListener(topics = "transaction-topic", groupId = "transaction-group")
     public void consume(TransferEvent event) {

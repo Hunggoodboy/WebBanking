@@ -19,8 +19,11 @@ public class PageController {
     public String historyTransfer() {
         return "historyTransfer";
     }
-    @GetMapping("/")
+    @GetMapping({"/", "/dashboard"})
     public String home() {return "Dashboard";}
     @GetMapping("/transfer")
     public String transfer() {return "Transfer";}
+
+    @GetMapping("/beneficiaries")
+    public String beneficiaries() {return "Beneficiaries";}
 }

@@ -35,7 +35,7 @@ public class NotificationController {
      */
     @GetMapping("/{userId}")
     public ResponseData<Page<Notification>> getNotifications(
-            @PathVariable Long userId,
+            @PathVariable UUID userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 

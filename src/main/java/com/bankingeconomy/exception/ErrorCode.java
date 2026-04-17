@@ -9,6 +9,8 @@ public enum ErrorCode {
 
     UNCATEGORIZED_EXCEPTION(9999, "Lỗi hệ thống"),
     USER_EXISTED(1001, "Email đã tồn tại"),
+    PHONE_EXISTED(1004, "Số điện thoại đã tồn tại"),
+    IDENTITY_CARD_EXISTED(1005, "CCCD đã tồn tại"),
     INVALID_CREDENTIALS(1002, "Thông tin đăng nhập không đúng"),
     INVALID_INPUT(1003, "Dữ liệu đầu vào không hợp lệ"),
     ACCOUNT_NOT_FOUND(2001, "Tài khoản không tồn tại"),
@@ -20,4 +22,3 @@ public enum ErrorCode {
     private final int code;
     private final String message;
 }
-

@@ -27,8 +27,9 @@
         <nav class="flex flex-wrap items-center gap-3 text-sm font-medium">
           <a href="#" class="px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-md">Tổng quan</a>
           <a href="/transfer" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Chuyển khoản</a>
-          <a href="#" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Lịch sử</a>
+          <a href="/historyTransfer" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Lịch sử</a>
           <a href="#" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Hồ sơ</a>
+          <a href="/beneficiaries" class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Danh bạ</a>
         </nav>
 
         <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
@@ -118,12 +119,53 @@
         <button class="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition">
           Nạp tiền
         </button>
-        <button class="px-6 py-3 rounded-2xl bg-white text-indigo-600 font-semibold border border-indigo-100 shadow-lg hover:bg-indigo-50 hover:scale-105 transition">
+        <a href="/historyTransfer" class="px-6 py-3 rounded-2xl bg-white text-indigo-600 font-semibold border border-indigo-100 shadow-lg hover:bg-indigo-50 hover:scale-105 transition">
           Xem lịch sử
-        </button>
+        </a>
+        <a href="/beneficiaries" class="px-6 py-3 rounded-2xl bg-white text-gray-700 font-semibold border border-slate-200 shadow-lg hover:bg-slate-50 hover:scale-105 transition">
+          Quản lý danh bạ
+        </a>
         <button class="px-6 py-3 rounded-2xl bg-white text-gray-700 font-semibold border border-slate-200 shadow-lg hover:bg-slate-50 hover:scale-105 transition">
           Thanh toán hóa đơn
         </button>
+      </div>
+    </section>
+
+    <section id="accountRegistrationSection" class="hidden mb-8">
+      <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+        <div>
+          <div>
+            <h3 class="text-xl font-bold">Đăng ký tài khoản ngân hàng</h3>
+            <p class="text-sm text-gray-500">
+              Bạn chưa có tài khoản để xem số dư, chuyển khoản và theo dõi lịch sử giao dịch. Nhập số tài khoản muốn đăng ký để bắt đầu.
+            </p>
+          </div>
+        </div>
+
+        <form id="accountRegistrationForm" class="mt-5 flex flex-col gap-3 lg:flex-row lg:items-start">
+          <div class="flex-1">
+            <label for="accountNumber" class="mb-2 block text-sm font-semibold text-slate-700">Số tài khoản đăng ký</label>
+            <input
+              id="accountNumber"
+              name="accountNumber"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="Ví dụ: 1234567890"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+            />
+            <p id="accountRegistrationError" class="mt-2 min-h-[20px] text-sm text-red-500"></p>
+            <p id="accountRegistrationSuccess" class="min-h-[20px] text-sm text-emerald-600"></p>
+          </div>
+
+          <button
+            id="accountRegistrationBtn"
+            type="submit"
+            class="rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Tạo tài khoản
+          </button>
+        </form>
       </div>
     </section>
 
@@ -137,7 +179,7 @@
             <h3 class="text-xl font-bold">Giao dịch gần đây</h3>
             <p class="text-sm text-gray-500">Theo dõi các hoạt động mới nhất trong tài khoản</p>
           </div>
-          <button class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Xem tất cả</button>
+          <a href="/historyTransfer" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Xem tất cả</a>
         </div>
 
         <p id="dashboardStatus" class="hidden mb-4 rounded-2xl px-4 py-3 text-sm"></p>
