@@ -91,13 +91,15 @@ public class HDFSReadWriteService {
         Long userId = user.getId();
 
         if (!locationMap.containsKey(userId)) {
-            // TODO: Khi có bảng user_location_map, thay thế logic này
-            //       bằng truy vấn thực tế từ bảng đó.
-            // Hiện tại dùng giá trị mặc định "UNKNOWN" nếu chưa có province/district
-            String province = "UNKNOWN";
-            String district = "UNKNOWN";
+            // Lấy province và district trực tiếp từ entity User
+            // (đã được bổ sung thuộc tính province, district trong bảng users)
+            String province = (user.getProvince() != null && !user.getProvince().isBlank())
+                    ? user.getProvince() : "UNKNOWN";
+            String district = (user.getDistrict() != null && !user.getDistrict().isBlank())
+                    ? user.getDistrict() : "UNKNOWN";
 
             locationMap.put(userId, new String[]{province, district});
+            log.debug("Ánh xạ userId={} → province={}, district={}", userId, province, district);
         }
     }
 
