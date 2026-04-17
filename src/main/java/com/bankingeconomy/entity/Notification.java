@@ -1,7 +1,6 @@
 package com.bankingeconomy.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.Date;
@@ -30,8 +29,8 @@ import lombok.Setter;
 @Table(
         name = "notifications",
         indexes = {
-                @Index(name = "idx_notif_user_id", columnList = "user_id"),
-                @Index(name = "idx_notif_user_type", columnList = "user_id, type")
+                @Index(name = "idx_user_id", columnList = "user_id"),
+                @Index(name = "idx_user_type", columnList = "user_id, type")
         }
 )
 @Getter
@@ -44,11 +43,11 @@ public class Notification {
     @UuidGenerator
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
-    @Column(length = 500, nullable = false)   // fix: 20 → 500
+    @Column(length = 20)
     private String message;
 
     @Column(name = "is_read")
@@ -60,7 +59,7 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
-    public enum NotificationType {
+    public static enum NotificationType {
         TRANSACTION,
         MARKETING,
         ALERT
