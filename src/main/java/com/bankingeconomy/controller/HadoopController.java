@@ -1,5 +1,6 @@
 package com.bankingeconomy.controller;
 
+import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.repository.TransactionRepository;
 import com.bankingeconomy.service.HDFSReadWriteService;
@@ -8,7 +9,9 @@ import com.bankingeconomy.service.MapReduceRunnerService;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,7 +22,7 @@ import java.util.List;
 @AllArgsConstructor
 public class HadoopController {
 
-    private final HdfsServiceImpl hdfsService;
+    private final HdfsService hdfsService;
     private final HDFSReadWriteService hdfsReadWriteService;
     private final TransactionRepository transactionRepository;
     private final MapReduceRunnerService mapReduceRunnerService;
@@ -38,15 +41,9 @@ public class HadoopController {
     }
 
     @GetMapping("/export-to-hdfs")
-    public ResponseData<String> exportTransactionsToHDFS() {
+    public ResponseData<?> exportTransactionsToHDFS() {
         try {
-            List<Transaction> transactions = transactionRepository.findAll();
-
-            String month = "2026_04";
-
-            hdfsReadWriteService.writeTransactions(month, transactions);
-
-            return new ResponseData<>(HttpStatus.OK.value(), "Thành công", "Đã xuất giao dịch lên HDFS cho tháng " + month);
+            return hdfsReadWriteService.excuteWriteToHdfs();
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Lỗi: " + e.getMessage());
