@@ -1,6 +1,5 @@
 package com.bankingeconomy.config;
 
-import com.bankingeconomy.repository.RedisTokenRepository;
 import com.bankingeconomy.service.JwtService;
 import com.nimbusds.jose.JOSEException;
 import lombok.RequiredArgsConstructor;

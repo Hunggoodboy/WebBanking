@@ -1,9 +1,8 @@
-package com.bankingeconomy.service;
+package com.bankingeconomy.service.Impl.WriteReadHDFS;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service

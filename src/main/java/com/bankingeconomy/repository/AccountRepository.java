@@ -8,9 +8,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AccountRepository extends JpaRepository<Account, UUID> {
-    List<Account> findByUserId(Long userId);
+    List<Account> findByUserId(UUID userId);
 
-    List<Account> findByUserIdAndStatus(Long userId, Account.AccountStatus status);
+    List<Account> findByUserIdAndStatus(UUID userId, Account.AccountStatus status);
 
     int countByUserId(Long userId);
 

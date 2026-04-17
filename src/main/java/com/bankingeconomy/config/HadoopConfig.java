@@ -11,15 +11,19 @@ import java.net.URI;
 public class HadoopConfig {
 
     @Bean
-    public FileSystem fileSystem() throws IOException {
+    public Configuration configuration() {
         System.setProperty("HADOOP_USER_NAME", "root");
-
         Configuration config = new Configuration();
         config.set("fs.defaultFS", "hdfs://localhost:9000");
         config.setBoolean("dfs.client.use.datanode.hostname", true);
         config.setInt("dfs.replication", 1);
-        config.set("dfs.client.socket-timeout", "60000");
+        // Quan trọng: Để MapReduce chạy được trên môi trường local/UTM của bạn
+        config.set("mapreduce.framework.name", "local");
+        return config;
+    }
 
-        return FileSystem.newInstance(URI.create("hdfs://localhost:9000"), config);
+    @Bean
+    public FileSystem fileSystem(Configuration configuration) throws IOException {
+        return FileSystem.get(URI.create("hdfs://localhost:9000"), configuration);
     }
 }

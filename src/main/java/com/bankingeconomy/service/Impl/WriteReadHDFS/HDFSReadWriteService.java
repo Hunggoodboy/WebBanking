@@ -1,4 +1,4 @@
-package com.bankingeconomy.service;
+package com.bankingeconomy.service.Impl.WriteReadHDFS;
 
 import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.Transaction;
@@ -15,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service đọc/ghi dữ liệu giao dịch lên HDFS theo thiết kế phân mảnh ngang.
@@ -66,8 +65,14 @@ public class HDFSReadWriteService {
      * @param transactions danh sách giao dịch từ SQL Server
      */
     public void writeTransactions(String month, List<Transaction> transactions) throws IOException {
+        Path basePath = new Path(BASE_PATH);
+        if (fileSystem.exists(basePath)) {
+            log.info("Phát hiện dữ liệu cũ. Đang xóa toàn bộ thư mục: {}", BASE_PATH);
+            // Tham số true cho phép xóa đệ quy tất cả thư mục con (province, district...)
+            fileSystem.delete(basePath, true);
+        }
         // Tự xây dựng userLocationMap từ dữ liệu entity
-        Map<Long, String[]> userLocationMap = new HashMap<>();
+        Map<UUID, String[]> userLocationMap = new HashMap<>();
 
         for (Transaction tx : transactions) {
             extractUserLocation(tx.getFromAccount(), userLocationMap);
@@ -84,18 +89,18 @@ public class HDFSReadWriteService {
      * Trích xuất thông tin province/district của user từ Account entity
      * và đưa vào userLocationMap.
      */
-    private void extractUserLocation(Account account, Map<Long, String[]> locationMap) {
+    private void extractUserLocation(Account account, Map<UUID, String[]> locationMap) {
         if (account == null || account.getUser() == null) return;
 
         User user = account.getUser();
-        Long userId = user.getId();
+        UUID userId = user.getId();
 
         if (!locationMap.containsKey(userId)) {
             // TODO: Khi có bảng user_location_map, thay thế logic này
             //       bằng truy vấn thực tế từ bảng đó.
             // Hiện tại dùng giá trị mặc định "UNKNOWN" nếu chưa có province/district
-            String province = "UNKNOWN";
-            String district = "UNKNOWN";
+            String province = user.getProvince() != null ? user.getProvince() : "UNKNOWN";
+            String district = user.getDistrict() != null ? user.getDistrict() : "UNKNOWN";
 
             locationMap.put(userId, new String[]{province, district});
         }
@@ -113,44 +118,34 @@ public class HDFSReadWriteService {
      */
     public void writeTransactionsByPartition(
             List<Transaction> transactions,
-            Map<Long, String[]> userLocationMap) throws IOException {
+            Map<UUID, String[]> userLocationMap) throws IOException {
 
-        // Nhóm các dòng fact_geo theo partition key
         Map<String, List<String>> partitionData = new LinkedHashMap<>();
 
         for (Transaction tx : transactions) {
-            // --- Phía OUT (người gửi) ---
-            buildFactGeoLine(tx, tx.getFromAccount(), "OUT",
-                    tx.getToAccount(), userLocationMap, partitionData);
-
-            // --- Phía IN (người nhận) ---
-            buildFactGeoLine(tx, tx.getToAccount(), "IN",
-                    tx.getFromAccount(), userLocationMap, partitionData);
+            buildFactGeoLine(tx, tx.getFromAccount(), "OUT", tx.getToAccount(), userLocationMap, partitionData);
+            buildFactGeoLine(tx, tx.getToAccount(), "IN", tx.getFromAccount(), userLocationMap, partitionData);
         }
 
-        // Ghi từng partition lên HDFS
-        int totalLines = 0;
         for (Map.Entry<String, List<String>> entry : partitionData.entrySet()) {
-            String partitionPath = entry.getKey();
+            String partitionDir = entry.getKey();
             List<String> lines = entry.getValue();
 
-            Path filePath = new Path(partitionPath + "part-00001.csv");
-            // Tạo thư mục partition nếu chưa có
-            fileSystem.mkdirs(filePath.getParent());
+            // SỬA TẠI ĐÂY: Dùng timestamp để tránh ghi đè file cũ
+            String fileName = "part-" + System.currentTimeMillis() + ".csv";
+            Path filePath = new Path(partitionDir + fileName);
 
+            fileSystem.mkdirs(new Path(partitionDir));
+
+            // Sử dụng FSDataOutputStream với cơ chế tạo mới
             try (FSDataOutputStream out = fileSystem.create(filePath, true)) {
                 out.write(CSV_HEADER.getBytes(StandardCharsets.UTF_8));
                 for (String line : lines) {
                     out.write(line.getBytes(StandardCharsets.UTF_8));
                 }
             }
-
-            totalLines += lines.size();
-            log.info("Ghi {} dòng vào mảnh HDFS: {}", lines.size(), filePath);
+            log.info("Đã ghi {} dòng vào HDFS: {}", lines.size(), filePath);
         }
-
-        log.info("Hoàn tất ghi {} dòng transaction_fact_geo vào {} mảnh trên HDFS",
-                totalLines, partitionData.size());
     }
 
     // ================================================================
@@ -305,52 +300,38 @@ public class HDFSReadWriteService {
     /**
      * Tạo một dòng CSV dạng transaction_fact_geo và thêm vào đúng partition.
      */
-    private void buildFactGeoLine(Transaction tx,
-                                  Account ownerAccount,
-                                  String direction,
-                                  Account counterpartyAccount,
-                                  Map<Long, String[]> userLocationMap,
+    private void buildFactGeoLine(Transaction tx, Account ownerAccount, String direction,
+                                  Account counterpartyAccount, Map<UUID, String[]> userLocationMap,
                                   Map<String, List<String>> partitionData) {
 
         if (ownerAccount == null || ownerAccount.getUser() == null) return;
 
-        User ownerUser = ownerAccount.getUser();
-        Long ownerUserId = ownerUser.getId();
-
-        // Lấy thông tin địa bàn từ bản đồ ánh xạ
-        String[] location = userLocationMap.get(ownerUserId);
-        if (location == null || location.length < 2) {
-            log.warn("Không tìm thấy location cho userId={}. Bỏ qua.", ownerUserId);
-            return;
-        }
+        UUID ownerUserId = ownerAccount.getUser().getId();
+        String[] location = userLocationMap.getOrDefault(ownerUserId, new String[]{"UNKNOWN", "UNKNOWN"});
 
         String province = location[0];
         String district = location[1];
-
         LocalDateTime createdAt = tx.getCreatedAt();
-        int year = createdAt.getYear();
-        String quarter = getQuarter(createdAt.getMonthValue());
-        String month = createdAt.format(MONTH_FMT);
 
-        // Build dòng CSV
-        String line = String.format("%s,%d,%s,%s,%s,%.2f,%s,%s,%s,%s,%d,%s,%s\n",
+        // Build dòng CSV khớp chính xác với Index trong Mapper
+        // Index: 0:id, 1:userId, 2:acc, 3:dir, 4:counterAcc, 5:amount, ..., 12:month
+        String line = String.format("%s,%s,%s,%s,%s,%.2f,%s,%s,%s,%s,%d,%s,%s\n",
                 tx.getId(),
                 ownerUserId,
                 ownerAccount.getAccountNumber(),
                 direction,
-                counterpartyAccount != null ? counterpartyAccount.getAccountNumber() : "",
-                tx.getAmount(),
+                counterpartyAccount != null ? counterpartyAccount.getAccountNumber() : "NULL",
+                tx.getAmount(), // Index 5 - Mapper sẽ đọc cái này
                 tx.getStatus(),
                 createdAt,
                 province,
                 district,
-                year,
-                quarter,
-                month
+                createdAt.getYear(),
+                getQuarter(createdAt.getMonthValue()),
+                createdAt.format(MONTH_FMT) // Index 12 - Mapper dùng làm Key
         );
 
-        // Xác định partition path
-        String partitionDir = buildPartitionDir(province, district, year, quarter);
+        String partitionDir = buildPartitionDir(province, district, createdAt.getYear(), getQuarter(createdAt.getMonthValue()));
         partitionData.computeIfAbsent(partitionDir, k -> new ArrayList<>()).add(line);
     }
 
@@ -373,4 +354,5 @@ public class HDFSReadWriteService {
         if (month <= 9) return "Q3";
         return "Q4";
     }
+
 }

@@ -1,18 +1,19 @@
 package com.bankingeconomy.controller;
 
+import com.bankingeconomy.dto.response.ReportDTO;
 import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.repository.TransactionRepository;
-import com.bankingeconomy.service.HDFSReadWriteService;
-import com.bankingeconomy.service.HdfsService;
-import com.bankingeconomy.service.MapReduceRunnerService;
+import com.bankingeconomy.service.Impl.WriteReadHDFS.HDFSReadWriteService;
+import com.bankingeconomy.service.Impl.WriteReadHDFS.HdfsService;
+import com.bankingeconomy.service.Impl.MapReduce.MapReduceRunnerService;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.bankingeconomy.dto.response.ResponseData;
 import org.springframework.http.HttpStatus;
@@ -22,50 +23,62 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/api/hadoop")
 @AllArgsConstructor
 public class HadoopController {
- 
-    private final HdfsService hdfsService;
+
     private final HDFSReadWriteService hdfsReadWriteService;
     private final TransactionRepository transactionRepository;
     private final MapReduceRunnerService mapReduceRunnerService;
 
-    // API này nhận vào một cái tên và tạo thư mục trên HDFS
-    @GetMapping("/create-dir")
-    public ResponseData<String> createDirectory(@RequestParam String dirName) {
-        try {
-            // Đường dẫn gốc trên HDFS, nối thêm tên thư mục bạn truyền vào
-            String path = "/user/hao/" + dirName;
-            hdfsService.createDirectory(path);
-            return new ResponseData<>(HttpStatus.OK.value(), "Thành công", "Đã tạo thành công thư mục: " + path + " trên HDFS!");
-        } catch (Exception e) {
-            return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Lỗi: " + e.getMessage());
-        }
-    }
-
+    /**
+     * URL: /api/hadoop/export-to-hdfs?month=2026_05
+     */
     @GetMapping("/export-to-hdfs")
-    public ResponseData<String> exportTransactionsToHDFS() {
+    public ResponseData<String> exportTransactionsToHDFS(@RequestParam(defaultValue = "2026_04") String month) {
         try {
+            // Lấy tất cả giao dịch từ DB
             List<Transaction> transactions = transactionRepository.findAll();
 
-            String month = "2026_04";
-
+            // Ghi lên HDFS (Lúc này service sẽ tự phân mảnh theo tỉnh/huyện của User)
             hdfsReadWriteService.writeTransactions(month, transactions);
 
-            return new ResponseData<>(HttpStatus.OK.value(), "Thành công", "Đã xuất giao dịch lên HDFS cho tháng " + month);
+            return new ResponseData<>(HttpStatus.OK.value(), "Thành công", "Đã xuất dữ liệu lên HDFS cho tháng " + month);
         } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Lỗi: " + e.getMessage());
+            return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Lỗi export: " + e.getMessage());
         }
     }
 
+    /**
+     * URL ĐỘNG: /api/hadoop/run-mapreduce?province=Hanoi&year=2026&quarter=Q2
+     * API này sẽ tính tổng tiền cho một tỉnh cụ thể trong một quý
+     */
     @GetMapping("/run-mapreduce")
-    public ResponseData<String> runMapReduce() {
+    public ResponseData<List<ReportDTO>> runMapReduce(
+            @RequestParam String province,
+            @RequestParam int year,
+            @RequestParam String quarter) {
         try {
-            // Kích hoạt hàm chạy MapReduce bạn đã viết sẵn
-            String result = mapReduceRunnerService.runTransactionTotalJob("2026_04");
-            return new ResponseData<>(HttpStatus.OK.value(), "Thành công", result);
+            // 1. Chạy Job MapReduce thông qua Service
+            String status = mapReduceRunnerService.runUserMonthlyReport(province, year, quarter);
+
+            if (status.contains("Thành công")) {
+                String outputPath = "/banking/reports/user_sum_" + province + "_" + year + "_" + quarter;
+
+                // 2. Lấy dữ liệu Map thô từ Service
+                List<Map<String, String>> rawData = mapReduceRunnerService.readMapReduceResult(outputPath);
+
+                // 3. Chuyển đổi List<Map<String, String>> sang List<ReportDTO>
+                List<ReportDTO> reportData = rawData.stream()
+                        .map(item -> new ReportDTO(
+                                item.get("user_period"),
+                                item.get("total_amount")
+                        ))
+                        .collect(Collectors.toList());
+
+                return new ResponseData<>(HttpStatus.OK.value(), "Thành công", reportData);
+            }
+
+            return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Job thất bại: " + status, null);
         } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Lỗi: " + e.getMessage());
+            return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Lỗi: " + e.getMessage(), null);
         }
     }
 }
