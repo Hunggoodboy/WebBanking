@@ -77,8 +77,8 @@ public class TestEventService {
         String json = objectMapper.writeValueAsString(event);
         kafkaTemplate.send(TRANSFER_TOPIC, json);
 
-        log.info("✅ Đã gửi COMPLETED TransferEvent lên Kafka");
-        return "✅ Đã gửi COMPLETED event: " + json;
+        log.info("Đã gửi COMPLETED TransferEvent lên Kafka");
+        return "Đã gửi COMPLETED event: " + json;
     }
 
     // ── TEST NOTIFICATION: FAILED ─────────────────────
@@ -102,8 +102,8 @@ public class TestEventService {
         String json = objectMapper.writeValueAsString(event);
         kafkaTemplate.send(TRANSFER_TOPIC, json);
 
-        log.info("✅ Đã gửi FAILED TransferEvent lên Kafka");
-        return "✅ Đã gửi FAILED event: " + json;
+        log.info("Đã gửi FAILED TransferEvent lên Kafka");
+        return "Đã gửi FAILED event: " + json;
     }
 
     // ── TEST NOTIFICATION: REVERSED ──────────────────
@@ -127,11 +127,11 @@ public class TestEventService {
         String json = objectMapper.writeValueAsString(event);
         kafkaTemplate.send(TRANSFER_TOPIC, json);
 
-        log.info("✅ Đã gửi REVERSED TransferEvent lên Kafka");
-        return "✅ Đã gửi REVERSED event: " + json;
+        log.info("Đã gửi REVERSED TransferEvent lên Kafka");
+        return "Đã gửi REVERSED event: " + json;
     }
 
-    // ── CONSUMER (test cũ) ────────────────────────────
+    // ── CONSUMER  ────────────────────────────
 
     @KafkaListener(topics = TOPIC, groupId = "test-group")
     public void consumeTestEvent(String message) {
