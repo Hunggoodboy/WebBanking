@@ -1,5 +1,4 @@
-package com.bankingeconomy.service.consumer;
-
+package com.bankingeconomy.service.consume;
 
 import com.bankingeconomy.event.TransferEvent;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,6 @@ public class TransactionProcessor {
         log.info("Received TransferEvent: {}", event);
 
         try {
-            // Generate transactionId (optional tracking)
             UUID transactionId = UUID.randomUUID();
             log.info("Transaction ID: {}", transactionId);
 
