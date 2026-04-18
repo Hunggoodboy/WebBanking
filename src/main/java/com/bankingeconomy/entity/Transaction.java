@@ -38,4 +38,8 @@ public class Transaction {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    private String country;
+
+    private String province;
 }

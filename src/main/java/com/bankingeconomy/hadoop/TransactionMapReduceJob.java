@@ -3,7 +3,6 @@ package com.bankingeconomy.hadoop;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -11,137 +10,151 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 /**
- * MapReduce Job: Tính tổng tiền giao dịch theo từng tài khoản.
+ * MapReduce Job: Phân mảnh dữ liệu giao dịch và tính toán thống kê.
  *
- * Input  (HDFS): /banking/transactions/transactions_2024_01.csv
- * Output (HDFS): /banking/reports/total_by_account_2024_01/
- *
- * Kết quả: mỗi dòng là  "ACC001  \t  700000.00"
- *
- * Chạy bằng lệnh:
- *   hadoop jar banking-app.jar com.bankingeconomy.hadoop.TransactionMapReduceJob 2024_01
+ * Cấu trúc phân mảnh: /banking/fragments/country={nước}/province={tỉnh}/year={năm}/quarter={quý}/
+ * Trong mỗi thư mục có:
+ *  - transactions.csv: Danh sách các giao dịch thuộc phân mảnh này.
+ *  - stats.csv: Thống kê tổng tiền và số lượng giao dịch.
  */
 @Slf4j
 public class TransactionMapReduceJob {
 
-    // ----------------------------------------------------------------
-    // MAPPER
-    // Đọc từng dòng CSV → phát ra (account_number, amount)
-    // ----------------------------------------------------------------
-
     public static class TransactionMapper
-            extends Mapper<LongWritable, Text, Text, DoubleWritable> {
+            extends Mapper<LongWritable, Text, Text, Text> {
 
-        private final Text account = new Text();
-        private final DoubleWritable amount = new DoubleWritable();
+        private final Text outputKey = new Text();
 
-        /**
-         * Mỗi lần gọi = 1 dòng CSV trong block HDFS mà Mapper này được giao.
-         *
-         * Input  : "tx001,ACC001,ACC002,500000.00,SUCCESS,2024-01-01"
-         * Output : (ACC001, 500000.0)
-         */
         @Override
         protected void map(LongWritable offset, Text line, Context context)
                 throws IOException, InterruptedException {
 
             String row = line.toString().trim();
-
-            // Bỏ qua dòng header
             if (row.startsWith("id")) return;
 
             String[] cols = row.split(",");
-            if (cols.length < 4) return;
+            if (cols.length < 8) return;
 
-            String fromAccount = cols[1].trim();
-            double txAmount;
+            // id(0), from(1), to(2), amount(3), status(4), created_at(5), country(6), province(7)
+            String createdAtStr = cols[5].trim();
+            String country = cols[6].trim();
+            String province = cols[7].trim();
+
+            if (country.isEmpty()) country = "Unknown";
+            if (province.isEmpty()) province = "Unknown";
+
+            // Parse ngày để lấy Năm và Quý
             try {
-                txAmount = Double.parseDouble(cols[3].trim());
-            } catch (NumberFormatException e) {
-                return;
-            }
+                LocalDateTime dateTime = LocalDateTime.parse(createdAtStr);
+                int year = dateTime.getYear();
+                int month = dateTime.getMonthValue();
+                int quarter = (month - 1) / 3 + 1;
 
-            account.set(fromAccount);
-            amount.set(txAmount);
-            context.write(account, amount);
+                // Key format: country|province|year|Qx
+                String keyStr = String.format("%s|%s|%d|Q%d", country, province, year, quarter);
+                outputKey.set(keyStr);
+                context.write(outputKey, line);
+            } catch (Exception e) {
+                // Bỏ qua nếu không parse được ngày
+            }
         }
     }
-
-    // ----------------------------------------------------------------
-    // REDUCER
-    // Nhận (account_number, [amount1, amount2, ...]) → cộng lại
-    // ----------------------------------------------------------------
 
     public static class TransactionReducer
-            extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
+            extends Reducer<Text, Text, Text, Text> {
 
-        private final DoubleWritable total = new DoubleWritable();
+        private MultipleOutputs<Text, Text> mos;
 
         @Override
-        protected void reduce(Text account, Iterable<DoubleWritable> amounts, Context context)
+        protected void setup(Context context) {
+            mos = new MultipleOutputs<>(context);
+        }
+
+        @Override
+        protected void reduce(Text key, Iterable<Text> values, Context context)
                 throws IOException, InterruptedException {
 
-            double sum = 0;
-            for (DoubleWritable amt : amounts) {
-                sum += amt.get();
+            String[] parts = key.toString().split("\\|");
+            String country = parts[0];
+            String province = parts[1];
+            String year = parts[2];
+            String quarter = parts[3];
+
+            // Đường dẫn cơ sở cho phân mảnh này
+            String baseDir = String.format("country=%s/province=%s/year=%s/quarter=%s/",
+                    country, province, year, quarter);
+
+            double totalAmount = 0;
+            long count = 0;
+
+            for (Text val : values) {
+                String row = val.toString();
+                String[] cols = row.split(",");
+                if (cols.length >= 4) {
+                    try {
+                        totalAmount += Double.parseDouble(cols[3].trim());
+                        count++;
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                // Ghi giao dịch vào file transactions
+                mos.write("transactions", null, val, baseDir + "transactions");
             }
 
-            total.set(sum);
-            context.write(account, total);
+            // Ghi thống kê vào file stats
+            String statsContent = String.format("Total Amount: %.2f, Transaction Count: %d", totalAmount, count);
+            mos.write("stats", null, new Text(statsContent), baseDir + "stats");
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            mos.close();
         }
     }
 
-    // ----------------------------------------------------------------
-    // MAIN – Cấu hình và chạy Job
-    // ----------------------------------------------------------------
-
-    /**
-     * Chạy job:
-     *   hadoop jar banking-app.jar com.bankingeconomy.hadoop.TransactionMapReduceJob 2024_01
-     *
-     * YARN sẽ nhận job này, phân bổ Container cho các Map/Reduce task,
-     * theo dõi tiến độ và báo kết quả về khi xong.
-     */
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
-            System.err.println("Thiếu tham số. Dùng: <month> (ví dụ: 2024_01)");
+            System.err.println("Dùng: <month> (ví dụ: 2024_01)");
             System.exit(1);
         }
 
-        String month      = args[0];
-        String inputPath  = "/banking/transactions/transactions_" + month + ".csv";
-        String outputPath = "/banking/reports/total_by_account_" + month;
-
+        String month = args[0];
         Configuration conf = new Configuration();
-        conf.set("fs.defaultFS", "hdfs://localhost:9000");
 
-        Job job = Job.getInstance(conf, "TotalByAccount_" + month);
+        Job job = Job.getInstance(conf, "TransactionFragmentation_" + month);
         job.setJarByClass(TransactionMapReduceJob.class);
 
-        // Chỉ định Mapper và Reducer
         job.setMapperClass(TransactionMapper.class);
         job.setReducerClass(TransactionReducer.class);
 
-        // Kiểu output của Mapper
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(DoubleWritable.class);
+        job.setMapOutputValueClass(Text.class);
 
-        // Kiểu output của Reducer (kết quả cuối)
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(DoubleWritable.class);
+        job.setOutputValueClass(Text.class);
 
-        FileInputFormat.addInputPath(job,   new Path(inputPath));
+        // Đăng ký MultipleOutputs
+        MultipleOutputs.addNamedOutput(job, "transactions", TextOutputFormat.class, Text.class, Text.class);
+        MultipleOutputs.addNamedOutput(job, "stats", TextOutputFormat.class, Text.class, Text.class);
+
+        String inputPath = "/banking/transactions/transactions_" + month + ".csv";
+        String outputPath = "/banking/fragments_" + month; // Output chính của YARN
+
+        FileInputFormat.addInputPath(job, new Path(inputPath));
         FileOutputFormat.setOutputPath(job, new Path(outputPath));
 
-        log.info("Đang chạy MapReduce job cho tháng {}...", month);
+        log.info("Đang chạy Job phân mảnh cho tháng {}...", month);
         boolean success = job.waitForCompletion(true);
 
         if (success) {
-            log.info("Job hoàn tất. Kết quả tại: {}", outputPath);
+            log.info("Job hoàn tất. Kết quả phân mảnh tại: /banking/fragments_{}/", month);
         }
 
         System.exit(success ? 0 : 1);

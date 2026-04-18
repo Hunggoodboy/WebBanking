@@ -41,11 +41,23 @@ public class HadoopController {
         try {
             List<Transaction> transactions = transactionRepository.findAll();
 
-            String month = "2026_04";
+            // Gán dữ liệu mẫu cho các giao dịch chưa có thông tin địa lý (để test phân mảnh)
+            for (Transaction tx : transactions) {
+                if (tx.getCountry() == null || tx.getCountry().isEmpty()) {
+                    tx.setCountry("Vietnam");
+                }
+                if (tx.getProvince() == null || tx.getProvince().isEmpty()) {
+                    // Phân bổ ngẫu nhiên một vài tỉnh để thấy được sự phân mảnh
+                    String[] provinces = {"Hanoi", "HoChiMinh", "DaNang", "CanTho"};
+                    tx.setProvince(provinces[Math.abs(tx.getId().hashCode()) % provinces.length]);
+                }
+            }
+            transactionRepository.saveAll(transactions);
 
+            String month = "2026_04";
             hdfsReadWriteService.writeTransactions(month, transactions);
 
-            return "Đã xuất giao dịch lên HDFS cho tháng " + month;
+            return "Đã cập nhật dữ liệu mẫu và xuất giao dịch lên HDFS cho tháng " + month;
         } catch (Exception e) {
             e.printStackTrace();
             return " Lỗi: " + e.getMessage();

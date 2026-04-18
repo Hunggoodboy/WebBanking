@@ -39,18 +39,20 @@ public class HDFSReadWriteService {
 
         try (FSDataOutputStream out = fileSystem.create(path, true)) {
             // Ghi header
-            out.write("id,from_account,to_account,amount,status,created_at\n"
+            out.write("id,from_account,to_account,amount,status,created_at,country,province\n"
                     .getBytes(StandardCharsets.UTF_8));
 
             // Ghi từng dòng giao dịch
             for (Transaction tx : transactions) {
-                String line = String.format("%s,%s,%s,%.2f,%s,%s\n",
+                String line = String.format("%s,%s,%s,%.2f,%s,%s,%s,%s\n",
                         tx.getId(),
                         tx.getFromAccount() != null ? tx.getFromAccount().getAccountNumber() : "",
                         tx.getToAccount()   != null ? tx.getToAccount().getAccountNumber()   : "",
                         tx.getAmount(),
                         tx.getStatus(),
-                        tx.getCreatedAt()
+                        tx.getCreatedAt(),
+                        tx.getCountry() != null ? tx.getCountry() : "",
+                        tx.getProvince() != null ? tx.getProvince() : ""
                 );
                 out.write(line.getBytes(StandardCharsets.UTF_8));
             }

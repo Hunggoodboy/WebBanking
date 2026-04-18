@@ -36,31 +36,35 @@ public class MapReduceRunnerService {
             }
 
             // Khởi tạo Job
-            Job job = Job.getInstance(conf, "TotalByAccount_" + month);
+            Job job = Job.getInstance(conf, "TransactionFragmentation_" + month);
 
             job.setJarByClass(TransactionMapReduceJob.class);
             job.setMapperClass(TransactionMapReduceJob.TransactionMapper.class);
             job.setReducerClass(TransactionMapReduceJob.TransactionReducer.class);
 
-            // Cấu hình kiểu dữ liệu Output
+            // Cấu hình kiểu dữ liệu Output (Dùng Text cho cả Key và Value)
             job.setMapOutputKeyClass(Text.class);
-            job.setMapOutputValueClass(DoubleWritable.class);
+            job.setMapOutputValueClass(Text.class);
             job.setOutputKeyClass(Text.class);
-            job.setOutputValueClass(DoubleWritable.class);
+            job.setOutputValueClass(Text.class);
+
+            // Đăng ký MultipleOutputs (Rất quan trọng cho logic phân mảnh)
+            org.apache.hadoop.mapreduce.lib.output.MultipleOutputs.addNamedOutput(job, "transactions", org.apache.hadoop.mapreduce.lib.output.TextOutputFormat.class, Text.class, Text.class);
+            org.apache.hadoop.mapreduce.lib.output.MultipleOutputs.addNamedOutput(job, "stats", org.apache.hadoop.mapreduce.lib.output.TextOutputFormat.class, Text.class, Text.class);
 
             // Set đường dẫn Input/Output
             FileInputFormat.addInputPath(job, new Path(inputPath));
             FileOutputFormat.setOutputPath(job, outPath);
 
-            log.info("Bắt đầu chạy MapReduce Job cho tháng: {}", month);
+            log.info("Bắt đầu chạy MapReduce Job phân mảnh cho tháng: {}", month);
 
             // waitForCompletion(true) sẽ block luồng cho đến khi Job chạy xong
             boolean success = job.waitForCompletion(true);
 
             if (success) {
-                return "MapReduce Job chạy thành công! Kết quả lưu tại: " + outputPath;
+                return "MapReduce Job phân mảnh thành công! Dữ liệu tại: /banking/fragments_" + month;
             } else {
-                return "MapReduce Job thất bại. Vui lòng check log.";
+                return "MapReduce Job thất bại. Vui lòng check Hadoop logs.";
             }
 
         } catch (Exception e) {
