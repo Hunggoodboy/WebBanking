@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import com.bankingeconomy.entity.Notification;
@@ -28,8 +29,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendNotification(String userId, String message, Notification.NotificationType type) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + userId));
+        User user = userRepository.findById(UUID.fromString(userId)).orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng để gửi thông báo"));
 
         Notification notification = Notification.builder()
                 .user(user)
@@ -49,7 +49,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Page<Notification> getByUser(UUID userId, Pageable pageable) {
+    public Page<Notification> getByUser(User user, Pageable pageable) {
+        UUID userId = user.getId();
         return notificationRepository.findByUserId(userId, pageable);
     }
 

@@ -2,11 +2,13 @@ package com.bankingeconomy.controller;
 
 import java.util.UUID;
 
+import com.bankingeconomy.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,14 +35,14 @@ public class NotificationController {
      * Lấy thông báo cũ từ DB (có phân trang)
      * GET /api/notifications/{userId}?page=0&size=10
      */
-    @GetMapping("/{userId}")
+    @GetMapping("/my_notifications")
     public ResponseData<Page<Notification>> getNotifications(
-            @PathVariable UUID userId,
+            @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Notification> notifications = notificationService.getByUser(userId, pageable);
+        Page<Notification> notifications = notificationService.getByUser(user, pageable);
 
         return new ResponseData<>(
                 HttpStatus.OK.value(),

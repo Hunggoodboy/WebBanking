@@ -9,6 +9,7 @@ import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.TransactionRepository;
 import com.bankingeconomy.service.BalanceCacheService;
+import com.bankingeconomy.service.kafka.producer.TransactionResultPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class TransactionProcessorService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final BalanceCacheService balanceCacheService;
+    private final TransactionResultPublisher transactionResultPublisher;
 
     @Transactional
     public void processTransaction(TransferEvent event) {

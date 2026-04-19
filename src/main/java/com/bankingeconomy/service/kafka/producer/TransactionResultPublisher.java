@@ -1,4 +1,4 @@
-package com.bankingeconomy.producer;
+package com.bankingeconomy.service.kafka.producer;
 
 import com.bankingeconomy.dto.event.TransactionResultEvent;
 import lombok.RequiredArgsConstructor;
