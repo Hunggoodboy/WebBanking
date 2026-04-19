@@ -73,4 +73,24 @@ public class BalanceCacheServiceImpl implements BalanceCacheService {
 
         return account.getBalance() >= amount;
     }
+
+    // ─────────────────────────────────────────
+    // Cập nhật số dư → DB + Redis Cache đồng thời
+    // ─────────────────────────────────────────
+    @Override
+    public void updateBalance(UUID accountId, double newBalance) {
+        // 1. Cập nhật số dư trong DB
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        account.setBalance(newBalance);
+        accountRepository.save(account);
+
+        // 2. Cập nhật luôn vào Redis cache (Cache Update thay vì Cache Evict)
+        //    → đảm bảo lần đọc tiếp theo lấy đúng số dư mới nhất
+        cacheBalance(accountId, newBalance);
+
+        log.info("Đã cập nhật số dư tài khoản {} = {} (DB + Redis Cache)",
+                account.getAccountNumber(), newBalance);
+    }
 }

@@ -17,6 +17,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(2002, "Người dùng không tồn tại"),
     INSUFFICIENT_BALANCE(2003, "Số dư không đủ"),
     ACCOUNT_INACTIVE(2004, "Tài khoản không hoạt động"),
+    UNAUTHORIZED_ACCESS(4003, "Bạn không có quyền truy cập tài khoản này"),
     ;
 
     private final int code;

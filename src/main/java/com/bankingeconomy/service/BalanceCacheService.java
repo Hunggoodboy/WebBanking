@@ -21,8 +21,18 @@ public interface BalanceCacheService {
     void evictBalance(UUID accountId);
 
     /**
+     * Cập nhật số dư mới vào cả DB lẫn Redis cache.
+     * Gọi khi số dư thay đổi (sau debit/credit).
+     *
+     * @param accountId  ID tài khoản
+     * @param newBalance số dư mới đã tính toán
+     */
+    void updateBalance(UUID accountId, double newBalance);
+
+    /**
      * Kiểm tra số dư có đủ để chuyển tiền không.
      * Ưu tiên lấy từ cache, fallback sang DB.
      */
     boolean hasEnoughBalance(UUID accountId, double amount);
 }
+
