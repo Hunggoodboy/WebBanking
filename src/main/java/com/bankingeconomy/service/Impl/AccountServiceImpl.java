@@ -16,6 +16,7 @@ import com.bankingeconomy.service.BalanceCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -116,18 +117,9 @@ public class AccountServiceImpl implements AccountService {
      * @param account tài khoản cần kiểm tra quyền sở hữu
      * @throws AppException UNAUTHORIZED_ACCESS nếu không phải chủ sở hữu
      */
-    private void verifyOwnership(Account account) {
-        // Lấy email từ SecurityContext (JWT sub claim)
-        String currentEmail = getCurrentUserEmail();
-        if (currentEmail == null) {
-            log.warn("Không thể xác định người dùng hiện tại từ SecurityContext");
-            throw new AppException(ErrorCode.UNAUTHORIZED_ACCESS);
-        }
+    private void verifyOwnership(@AuthenticationPrincipal User currentUser, Account account) {
 
-        // Truy vấn User từ email
-        User currentUser = userRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
+        String currentEmail=  currentUser.getEmail();
         // So sánh user_id của Account với User hiện tại
         if (account.getUser() == null || !account.getUser().getId().equals(currentUser.getId())) {
             log.warn("User {} (email={}) cố truy cập tài khoản {} không thuộc sở hữu",
@@ -144,34 +136,6 @@ public class AccountServiceImpl implements AccountService {
      *
      * @return email hoặc null nếu chưa xác thực
      */
-    private String getCurrentUserEmail() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        // Trường hợp dùng OAuth2 JWT Resource Server
-        if (principal instanceof Jwt jwt) {
-            return jwt.getClaimAsString("sub");
-        }
-
-        // Trường hợp dùng UserDetails (form login)
-        if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-            return userDetails.getUsername();
-        }
-
-        // Fallback: principal là String (email)
-        if (principal instanceof String email) {
-            return email;
-        }
-
-        return null;
-    }
-}
-
 @Override
 public ResponseData<?> createAccount(User user, AccountRequest request){
     String accountNumber = request != null && request.getAccountNumber() != null
@@ -254,5 +218,5 @@ public AccountLookupResponse lookupByAccountNumber(String accountNumber) {
             .accountHolderName(account.getUser() != null ? account.getUser().getFullName() : "Không rõ chủ tài khoản")
             .status(account.getStatus() != null ? account.getStatus().name() : "")
             .build();
-}
+    }
 }
