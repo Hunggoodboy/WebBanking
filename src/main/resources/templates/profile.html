@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hồ sơ khách hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/profile.css" />
+</head>
+<body>
+  <div class="app">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">Ngân hàng số</div>
+          <h1 class="title">Hồ sơ khách hàng</h1>
+          <p class="subtitle">
+            Đồng bộ thông tin cá nhân, định danh, khu vực cư trú và danh sách tài khoản liên kết
+            trực tiếp từ backend qua REST API JSON.
+          </p>
+        </div>
+        <button class="nav-btn" id="openHistoryBtn" type="button">Xem lịch sử giao dịch</button>
+      </div>
+      <div class="hero-tags">
+        <span class="tag">Thông tin cá nhân</span>
+        <span class="tag">Tỉnh thành và quận huyện</span>
+        <span class="tag">Tài khoản liên kết</span>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <article class="profile-card">
+        <div class="avatar-row">
+          <div class="avatar" id="avatarInitials">KH</div>
+          <div>
+            <h2 class="profile-name" id="profileName">Đang tải dữ liệu</h2>
+            <div class="profile-meta">
+              <div>Mã khách hàng: <strong id="profileId">--</strong></div>
+              <div>Email đăng nhập: <strong id="profileEmail">--</strong></div>
+              <div>Ngày tạo hồ sơ: <strong id="profileCreatedAt">--</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-label">Số điện thoại</div>
+            <div class="stat-value" id="profilePhone">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Tỉnh thành</div>
+            <div class="stat-value" id="profileProvince">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Quận huyện</div>
+            <div class="stat-value" id="profileDistrict">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Vai trò</div>
+            <div class="stat-value" id="profileRole">--</div>
+          </div>
+        </div>
+      </article>
+
+      <aside class="detail-card">
+        <h2 class="section-title">Chi tiết hồ sơ</h2>
+        <p class="section-subtitle">Tổng hợp dữ liệu định danh, khu vực cư trú và thông tin liên hệ hiện có trên hệ thống.</p>
+        <div class="detail-list">
+          <div class="detail-item"><span>Mã khách hàng</span><strong id="detailId">--</strong></div>
+          <div class="detail-item"><span>Họ và tên</span><strong id="detailFullName">--</strong></div>
+          <div class="detail-item"><span>Email đăng nhập</span><strong id="detailEmail">--</strong></div>
+          <div class="detail-item"><span>Số điện thoại</span><strong id="detailPhone">--</strong></div>
+          <div class="detail-item"><span>Số CMND/CCCD</span><strong id="detailIdentityCard">--</strong></div>
+          <div class="detail-item"><span>Giới tính</span><strong id="detailGender">--</strong></div>
+          <div class="detail-item"><span>Tỉnh thành</span><strong id="detailProvince">--</strong></div>
+          <div class="detail-item"><span>Quận huyện</span><strong id="detailDistrict">--</strong></div>
+          <div class="detail-item"><span>Vai trò</span><strong id="detailRole">--</strong></div>
+          <div class="detail-item"><span>Ngày tạo hồ sơ</span><strong id="detailCreatedAt">--</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="account-card">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Tài khoản liên kết</h2>
+          <p class="section-subtitle">Danh sách tài khoản thanh toán đang liên kết với hồ sơ khách hàng.</p>
+        </div>
+        <div class="account-count">Số tài khoản: <strong id="accountCount">0</strong></div>
+      </div>
+      <div class="account-list" id="accountList"></div>
+    </section>
+
+    <section class="edit-card">
+      <div>
+        <h2 class="section-title">Cập nhật thông tin</h2>
+        <p class="section-subtitle">Thay đổi dữ liệu cá nhân rồi gửi JSON lên <code>/api/user/me</code> để đồng bộ backend.</p>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="fullNameInput">Họ và tên</label>
+          <input id="fullNameInput" type="text" />
+          <p class="field-error" id="fullNameError"></p>
+        </div>
+        <div class="field">
+          <label for="emailInput">Email đăng nhập</label>
+          <input id="emailInput" type="email" />
+          <p class="field-error" id="emailError"></p>
+        </div>
+        <div class="field">
+          <label for="phoneInput">Số điện thoại</label>
+          <input id="phoneInput" type="text" />
+          <p class="field-error" id="phoneError"></p>
+        </div>
+        <div class="field">
+          <label for="identityCardInput">Số CMND/CCCD</label>
+          <input id="identityCardInput" type="text" />
+          <p class="field-error" id="identityCardError"></p>
+        </div>
+        <div class="field">
+          <label for="provinceInput">Tỉnh thành</label>
+          <input id="provinceInput" type="text" />
+          <p class="field-error" id="provinceError"></p>
+        </div>
+        <div class="field">
+          <label for="districtInput">Quận huyện</label>
+          <input id="districtInput" type="text" />
+          <p class="field-error" id="districtError"></p>
+        </div>
+        <div class="field full">
+          <label for="genderInput">Giới tính</label>
+          <select id="genderInput">
+            <option value="">Chọn giới tính</option>
+            <option value="Nam">Nam</option>
+            <option value="Nữ">Nữ</option>
+            <option value="Khác">Khác</option>
+          </select>
+          <p class="field-error" id="genderError"></p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary-btn" id="saveProfileBtn" type="button">Lưu thay đổi</button>
+        <button class="secondary-btn" id="resetProfileBtn" type="button">Khôi phục dữ liệu</button>
+      </div>
+      <div class="helper" id="helperText">Hệ thống đang tải thông tin khách hàng từ backend.</div>
+    </section>
+  </div>
+
+  <script src="/js/profile.js"></script>
+</body>
+</html>

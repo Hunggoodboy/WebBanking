@@ -19,8 +19,23 @@ public class PageController {
     public String historyTransfer() {
         return "historyTransfer";
     }
-    @GetMapping("/")
-    public String home() {return "Dashboard";}
+    @GetMapping({"/", "/dashboard"})
+    public String home() {
+        return "Dashboard";
+    }
+
+    @GetMapping("/admin/dashboard")
+    public String adminDashboard() {
+        return "AdminDashboard";
+    }
+
     @GetMapping("/transfer")
-    public String transfer() {return "Transfer";}
+    public String transfer() {
+        return "Transfer";
+    }
+
+    @GetMapping("/profile")
+    public String profile() {
+        return "profile";
+    }
 }

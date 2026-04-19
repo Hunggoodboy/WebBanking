@@ -1,6 +1,8 @@
 package com.bankingeconomy.controller;
 
 import com.bankingeconomy.dto.request.AccountRequest;
+import com.bankingeconomy.dto.response.AccountLookupResponse;
+import com.bankingeconomy.dto.response.AccountSummaryResponse;
 import com.bankingeconomy.dto.response.BalanceResponse;
 import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.entity.User;
@@ -11,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -21,8 +24,20 @@ public class AccountController {
     private final AccountService accountService;
 
     @PostMapping("/create")
-    public ResponseData<?> createAccount(@AuthenticationPrincipal User user, AccountRequest request){
+    public ResponseData<?> createAccount(@AuthenticationPrincipal User user, @RequestBody AccountRequest request){
         return accountService.createAccount(user, request);
+    }
+
+    @GetMapping("/me")
+    public ResponseData<List<AccountSummaryResponse>> getMyAccounts(@AuthenticationPrincipal User user) {
+        List<AccountSummaryResponse> accounts = accountService.getMyAccounts(user);
+        return new ResponseData<>(HttpStatus.OK.value(), "Lấy danh sách tài khoản thành công", accounts);
+    }
+
+    @GetMapping("/lookup")
+    public ResponseData<AccountLookupResponse> lookupAccount(@RequestParam String accountNumber) {
+        AccountLookupResponse account = accountService.lookupByAccountNumber(accountNumber);
+        return new ResponseData<>(HttpStatus.OK.value(), "Tra cứu tài khoản thành công", account);
     }
 
     // ─────────────────────────────────────────

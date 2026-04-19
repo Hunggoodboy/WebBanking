@@ -2,7 +2,7 @@ const API_ORIGIN = resolveApiOrigin();
 const CONFIG = {
   LOGIN_URL: `${API_ORIGIN}/api/auth/login`,
   REGISTER_URL: `${API_ORIGIN}/api/auth/register`,
-  REDIRECT_AFTER_LOGIN: "/historyTransfer",
+  REDIRECT_AFTER_LOGIN: "/dashboard",
   REDIRECT_AFTER_REGISTER: "/login",
 };
 
@@ -96,6 +96,8 @@ function initRegisterForm() {
   const customerId = document.getElementById("customerId");
   const phone = document.getElementById("phone");
   const username = document.getElementById("username");
+  const province = document.getElementById("province");
+  const district = document.getElementById("district");
   const password = document.getElementById("password");
   const confirmPassword = document.getElementById("confirmPassword");
   const agree = document.getElementById("agree");
@@ -104,9 +106,12 @@ function initRegisterForm() {
   const customerIdError = document.getElementById("customerIdError");
   const phoneError = document.getElementById("phoneError");
   const usernameError = document.getElementById("usernameError");
+  const provinceError = document.getElementById("provinceError");
+  const districtError = document.getElementById("districtError");
   const passwordError = document.getElementById("passwordError");
   const confirmPasswordError = document.getElementById("confirmPasswordError");
   const agreeError = document.getElementById("agreeError");
+  const formError = document.getElementById("formError");
 
   const registerBtn = document.getElementById("registerBtn");
   const successMsg = document.getElementById("successMsg");
@@ -126,6 +131,18 @@ function initRegisterForm() {
     });
   }
 
+  bindRegisterFieldEvents([
+    { input: fullName, error: fullNameError, normalize: true },
+    { input: customerId, error: customerIdError, normalize: true },
+    { input: phone, error: phoneError, normalize: true },
+    { input: username, error: usernameError, normalize: true },
+    { input: province, error: provinceError, normalize: true },
+    { input: district, error: districtError, normalize: true },
+    { input: password, error: passwordError },
+    { input: confirmPassword, error: confirmPasswordError },
+    { input: agree, error: agreeError, eventName: "change" },
+  ], formError, successMsg);
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -134,17 +151,22 @@ function initRegisterForm() {
       customerIdError,
       phoneError,
       usernameError,
+      provinceError,
+      districtError,
       passwordError,
       confirmPasswordError,
       agreeError,
+      formError,
       successMsg,
     });
 
     const payload = {
-      fullName: fullName.value.trim(),
+      fullName: normalizeTextInput(fullName.value),
       customerId: customerId.value.trim(),
       phone: phone.value.trim(),
       username: username.value.trim(),
+      province: normalizeTextInput(province.value),
+      district: normalizeTextInput(district.value),
       password: password.value.trim(),
       confirmPassword: confirmPassword.value.trim(),
       agree: agree.checked,
@@ -155,6 +177,8 @@ function initRegisterForm() {
       customerIdError,
       phoneError,
       usernameError,
+      provinceError,
+      districtError,
       passwordError,
       confirmPasswordError,
       agreeError,
@@ -170,6 +194,8 @@ function initRegisterForm() {
         identityCard: payload.customerId,
         phone: payload.phone,
         email: payload.username,
+        province: payload.province,
+        district: payload.district,
         password: payload.password,
         confirmPassword: payload.confirmPassword,
       };
@@ -190,28 +216,33 @@ function initRegisterForm() {
           customerIdError,
           phoneError,
           usernameError,
+          provinceError,
+          districtError,
           passwordError,
+          formError,
         });
         throw new Error(data?.message || "Đăng ký thất bại.");
       }
 
-      successMsg.textContent = "Đăng ký thành công.";
+      const registerSuccessMessage = data?.message || "Đăng ký thành công.";
+      successMsg.textContent = registerSuccessMessage;
       successMsg.style.display = "block";
-
-      form.reset();
 
       setTimeout(() => {
         window.location.href = CONFIG.REDIRECT_AFTER_REGISTER;
-      }, 1000);
+      }, 1800);
     } catch (error) {
       if (
         !fullNameError.textContent &&
         !customerIdError.textContent &&
         !phoneError.textContent &&
         !usernameError.textContent &&
-        !passwordError.textContent
+        !provinceError.textContent &&
+        !districtError.textContent &&
+        !passwordError.textContent &&
+        !formError.textContent
       ) {
-        passwordError.textContent = error.message || "Có lỗi xảy ra khi đăng ký.";
+        formError.textContent = error.message || "Có lỗi xảy ra khi đăng ký.";
       }
       console.error("Register error:", error);
     } finally {
@@ -274,6 +305,16 @@ function validateRegister(payload, refs) {
     valid = false;
   }
 
+  if (!payload.province) {
+    refs.provinceError.textContent = "Vui lòng nhập tỉnh/thành phố.";
+    valid = false;
+  }
+
+  if (!payload.district) {
+    refs.districtError.textContent = "Vui lòng nhập quận/huyện.";
+    valid = false;
+  }
+
   if (!payload.password) {
     refs.passwordError.textContent = "Vui lòng nhập mật khẩu.";
     valid = false;
@@ -309,10 +350,44 @@ function clearRegisterErrors(refs) {
   refs.customerIdError.textContent = "";
   refs.phoneError.textContent = "";
   refs.usernameError.textContent = "";
+  refs.provinceError.textContent = "";
+  refs.districtError.textContent = "";
   refs.passwordError.textContent = "";
   refs.confirmPasswordError.textContent = "";
   refs.agreeError.textContent = "";
+  refs.formError.textContent = "";
   refs.successMsg.style.display = "none";
+}
+
+function bindRegisterFieldEvents(fields, formError, successMsg) {
+  for (const field of fields) {
+    if (!field.input || !field.error) continue;
+
+    const eventName = field.eventName || "input";
+    field.input.addEventListener(eventName, () => {
+      field.error.textContent = "";
+
+      if (formError) {
+        formError.textContent = "";
+      }
+
+      if (successMsg) {
+        successMsg.style.display = "none";
+      }
+    });
+
+    if (eventName !== "change") {
+      field.input.addEventListener("blur", () => {
+        if (field.normalize && typeof field.input.value === "string") {
+          field.input.value = normalizeTextInput(field.input.value);
+        }
+      });
+    }
+  }
+}
+
+function normalizeTextInput(value) {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function togglePasswordVisibility(input, button) {
@@ -402,6 +477,8 @@ function handleRegisterApiError(data, refs) {
   if (errors.customerId) refs.customerIdError.textContent = errors.customerId;
   if (errors.phone) refs.phoneError.textContent = errors.phone;
   if (errors.username) refs.usernameError.textContent = errors.username;
+  if (errors.province) refs.provinceError.textContent = errors.province;
+  if (errors.district) refs.districtError.textContent = errors.district;
   if (errors.password) refs.passwordError.textContent = errors.password;
 
   if (Object.keys(errors).length > 0) return;
@@ -414,8 +491,12 @@ function handleRegisterApiError(data, refs) {
     refs.customerIdError.textContent = message;
   } else if (lower.includes("điện thoại") || lower.includes("phone")) {
     refs.phoneError.textContent = message;
+  } else if (lower.includes("tỉnh") || lower.includes("thành")) {
+    refs.provinceError.textContent = message;
+  } else if (lower.includes("quận") || lower.includes("huyện")) {
+    refs.districtError.textContent = message;
   } else {
-    refs.passwordError.textContent = message;
+    refs.formError.textContent = message;
   }
 }
 

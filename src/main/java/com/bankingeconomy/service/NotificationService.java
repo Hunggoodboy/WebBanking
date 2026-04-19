@@ -9,6 +9,6 @@ import com.bankingeconomy.entity.Notification;
 
 public interface NotificationService {
     void sendNotification(String userId, String message, Notification.NotificationType type);
-    Page<Notification> getByUser(Long userId, Pageable pageable);
+    Page<Notification> getByUser(UUID userId, Pageable pageable);
     void markAsRead(UUID notificationId);
 }

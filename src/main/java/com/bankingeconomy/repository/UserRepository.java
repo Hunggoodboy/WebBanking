@@ -6,13 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByPhone(String phoneNumber);
 
     boolean existsByPhone(String phoneNumber);
+    boolean existsByIdentityCard(String identityCard);
 
     Optional<User> findByEmail(String username);
-    Optional<User> findById(UUID id);
     boolean existsByEmail(String email);
 
     int countByEmail(String email);

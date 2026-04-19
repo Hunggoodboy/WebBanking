@@ -1,10 +1,13 @@
 package com.bankingeconomy.service;
 
 import com.bankingeconomy.dto.request.AccountRequest;
+import com.bankingeconomy.dto.response.AccountLookupResponse;
+import com.bankingeconomy.dto.response.AccountSummaryResponse;
 import com.bankingeconomy.dto.response.BalanceResponse;
 import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.entity.User;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface AccountService {
@@ -27,4 +30,8 @@ public interface AccountService {
     boolean checkBalanceForTransfer(UUID accountId, double amount);
 
     ResponseData<?> createAccount(User user, AccountRequest request);
+
+    List<AccountSummaryResponse> getMyAccounts(User user);
+
+    AccountLookupResponse lookupByAccountNumber(String accountNumber);
 }

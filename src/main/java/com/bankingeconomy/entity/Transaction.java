@@ -15,8 +15,7 @@ import java.util.UUID;
         name = "transactions",
         indexes = {
                 @Index(name = "idx_to_account_id", columnList = "to_account_id"),
-                @Index(name = "idx_from_and_to_account_id", columnList = "from_account_id, to_account_id"),
-                @Index(name = "idx_user_created_at", columnList = "user_id, created_at")
+                @Index(name = "idx_from_and_to_account_id", columnList = "from_account_id, to_account_id")
         }
 )
 @Data

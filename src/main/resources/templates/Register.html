@@ -240,6 +240,7 @@
           class="input"
           type="text"
           id="fullName"
+          name="fullName"
           placeholder="Nhập họ và tên"
           autocomplete="name"
         />
@@ -252,6 +253,7 @@
           class="input"
           type="text"
           id="customerId"
+          name="customerId"
           placeholder="Nhập số CMND/CCCD"
           autocomplete="off"
         />
@@ -264,6 +266,7 @@
           class="input"
           type="tel"
           id="phone"
+          name="phone"
           placeholder="Nhập số điện thoại"
           autocomplete="tel"
         />
@@ -276,10 +279,37 @@
           class="input"
           type="email"
           id="username"
+          name="username"
           placeholder="Nhập địa chỉ email"
           autocomplete="username"
         />
         <div class="error" id="usernameError"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="label" for="province">Tỉnh/Thành phố</label>
+        <input
+          class="input"
+          type="text"
+          id="province"
+          name="province"
+          placeholder="Nhập tỉnh hoặc thành phố"
+          autocomplete="address-level1"
+        />
+        <div class="error" id="provinceError"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="label" for="district">Quận/Huyện</label>
+        <input
+          class="input"
+          type="text"
+          id="district"
+          name="district"
+          placeholder="Nhập quận hoặc huyện"
+          autocomplete="address-level2"
+        />
+        <div class="error" id="districtError"></div>
       </div>
 
       <div class="form-group">
@@ -289,6 +319,7 @@
             class="input"
             type="password"
             id="password"
+            name="password"
             placeholder="Tạo mật khẩu"
             autocomplete="new-password"
           />
@@ -304,6 +335,7 @@
             class="input"
             type="password"
             id="confirmPassword"
+            name="confirmPassword"
             placeholder="Nhập lại mật khẩu"
             autocomplete="new-password"
           />
@@ -313,13 +345,14 @@
       </div>
 
       <label class="checkbox-wrap">
-        <input type="checkbox" id="agree" />
+        <input type="checkbox" id="agree" name="agree" />
         <span>
           Tôi đồng ý với <a href="#">điều khoản sử dụng</a> và
           <a href="#">chính sách bảo mật</a>.
         </span>
       </label>
       <div class="error" id="agreeError"></div>
+      <div class="error" id="formError"></div>
 
       <button type="submit" class="btn" id="registerBtn">Đăng ký</button>
       <div class="success" id="successMsg">Đăng ký thành công.</div>
@@ -330,6 +363,6 @@
       <a href="login" class="switch-btn">Quay lại đăng nhập</a>
     </div>
   </div>
-  <script src="/js/Auth.js"></script>
+  <script src="/js/Auth.js?v=20260417-0135"></script>
 </body>
 </html>
