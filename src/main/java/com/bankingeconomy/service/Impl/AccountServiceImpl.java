@@ -16,7 +16,6 @@ import com.bankingeconomy.service.BalanceCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -117,9 +116,18 @@ public class AccountServiceImpl implements AccountService {
      * @param account tài khoản cần kiểm tra quyền sở hữu
      * @throws AppException UNAUTHORIZED_ACCESS nếu không phải chủ sở hữu
      */
-    private void verifyOwnership(@AuthenticationPrincipal User currentUser, Account account) {
+    private void verifyOwnership(Account account) {
+        // Lấy email từ SecurityContext (JWT sub claim)
+        String currentEmail = getCurrentUserEmail();
+        if (currentEmail == null) {
+            log.warn("Không thể xác định người dùng hiện tại từ SecurityContext");
+            throw new AppException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
 
-        String currentEmail=  currentUser.getEmail();
+        // Truy vấn User từ email
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         // So sánh user_id của Account với User hiện tại
         if (account.getUser() == null || !account.getUser().getId().equals(currentUser.getId())) {
             log.warn("User {} (email={}) cố truy cập tài khoản {} không thuộc sở hữu",
@@ -136,87 +144,114 @@ public class AccountServiceImpl implements AccountService {
      *
      * @return email hoặc null nếu chưa xác thực
      */
-@Override
-public ResponseData<?> createAccount(User user, AccountRequest request){
-    String accountNumber = request != null && request.getAccountNumber() != null
-            ? request.getAccountNumber().trim()
-            : "";
+    private String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (accountNumber.isBlank()) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        // Trường hợp dùng OAuth2 JWT Resource Server
+        if (principal instanceof Jwt jwt) {
+            return jwt.getClaimAsString("sub");
+        }
+
+        // Trường hợp dùng UserDetails (form login)
+        if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+            return userDetails.getUsername();
+        }
+
+        // Fallback: principal là String (email)
+        if (principal instanceof String email) {
+            return email;
+        }
+
+        return null;
+    }
+    @Override
+    public ResponseData<?> createAccount(User user, AccountRequest request){
+        String accountNumber = request != null && request.getAccountNumber() != null
+                ? request.getAccountNumber().trim()
+                : "";
+
+        if (accountNumber.isBlank()) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message("Vui lòng nhập số tài khoản muốn đăng ký")
+                    .build();
+        }
+
+        if (!accountNumber.matches("\\d{6,20}")) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message("Số tài khoản phải gồm từ 6 đến 20 chữ số")
+                    .build();
+        }
+
+        if(accountRepository.findByAccountNumber(accountNumber).isPresent()) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message("Tài khoản đã tồn tại")
+                    .build();
+        }
+        Account account = Account.builder()
+                .user(user)
+                .accountNumber(accountNumber)
+                .balance(0.0)
+                .status(Account.AccountStatus.ACTIVE)
+                .createdAt(new java.util.Date())
+                .build();
+        accountRepository.save(account);
         return ResponseData.builder()
-                .status(400)
-                .message("Vui lòng nhập số tài khoản muốn đăng ký")
+                .status(201)
+                .message("Account created successfully")
+                .data(account.getId())
                 .build();
     }
 
-    if (!accountNumber.matches("\\d{6,20}")) {
-        return ResponseData.builder()
-                .status(400)
-                .message("Số tài khoản phải gồm từ 6 đến 20 chữ số")
+    @Override
+    public List<AccountSummaryResponse> getMyAccounts(User user) {
+        List<Account> accounts = accountRepository.findAll().stream()
+                .filter(account -> account.getUser() != null && account.getUser().getId().equals(user.getId()))
+                .sorted(Comparator.comparing(Account::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+
+        return java.util.stream.IntStream.range(0, accounts.size())
+                .mapToObj(index -> {
+                    Account account = accounts.get(index);
+                    boolean primary = index == 0;
+                    Double cachedBalance = balanceCacheService.getCachedBalance(account.getId());
+                    double balance = cachedBalance != null ? cachedBalance : account.getBalance();
+
+                    if (cachedBalance == null) {
+                        balanceCacheService.cacheBalance(account.getId(), balance);
+                    }
+
+                    return AccountSummaryResponse.builder()
+                            .id(account.getId())
+                            .accountNumber(account.getAccountNumber())
+                            .balance(balance)
+                            .status(account.getStatus() != null ? account.getStatus().name() : "")
+                            .name(primary ? "Tài khoản thanh toán" : "Tài khoản phụ")
+                            .primary(primary)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    public AccountLookupResponse lookupByAccountNumber(String accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        return AccountLookupResponse.builder()
+                .id(account.getId())
+                .accountNumber(account.getAccountNumber())
+                .accountHolderName(account.getUser() != null ? account.getUser().getFullName() : "Không rõ chủ tài khoản")
+                .status(account.getStatus() != null ? account.getStatus().name() : "")
                 .build();
     }
-
-    if(accountRepository.findByAccountNumber(accountNumber).isPresent()) {
-        return ResponseData.builder()
-                .status(400)
-                .message("Tài khoản đã tồn tại")
-                .build();
-    }
-    Account account = Account.builder()
-            .user(user)
-            .accountNumber(accountNumber)
-            .balance(0.0)
-            .status(Account.AccountStatus.ACTIVE)
-            .createdAt(new java.util.Date())
-            .build();
-    accountRepository.save(account);
-    return ResponseData.builder()
-            .status(201)
-            .message("Account created successfully")
-            .data(account.getId())
-            .build();
 }
 
-@Override
-public List<AccountSummaryResponse> getMyAccounts(User user) {
-    List<Account> accounts = accountRepository.findAll().stream()
-            .filter(account -> account.getUser() != null && account.getUser().getId().equals(user.getId()))
-            .sorted(Comparator.comparing(Account::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-            .toList();
-
-    return java.util.stream.IntStream.range(0, accounts.size())
-            .mapToObj(index -> {
-                Account account = accounts.get(index);
-                boolean primary = index == 0;
-                Double cachedBalance = balanceCacheService.getCachedBalance(account.getId());
-                double balance = cachedBalance != null ? cachedBalance : account.getBalance();
-
-                if (cachedBalance == null) {
-                    balanceCacheService.cacheBalance(account.getId(), balance);
-                }
-
-                return AccountSummaryResponse.builder()
-                        .id(account.getId())
-                        .accountNumber(account.getAccountNumber())
-                        .balance(balance)
-                        .status(account.getStatus() != null ? account.getStatus().name() : "")
-                        .name(primary ? "Tài khoản thanh toán" : "Tài khoản phụ")
-                        .primary(primary)
-                        .build();
-            })
-            .toList();
-}
-
-@Override
-public AccountLookupResponse lookupByAccountNumber(String accountNumber) {
-    Account account = accountRepository.findByAccountNumber(accountNumber)
-            .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
-
-    return AccountLookupResponse.builder()
-            .id(account.getId())
-            .accountNumber(account.getAccountNumber())
-            .accountHolderName(account.getUser() != null ? account.getUser().getFullName() : "Không rõ chủ tài khoản")
-            .status(account.getStatus() != null ? account.getStatus().name() : "")
-            .build();
-    }
-}
