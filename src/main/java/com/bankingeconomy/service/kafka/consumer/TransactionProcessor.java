@@ -1,4 +1,4 @@
-package com.bankingeconomy.service.consumer;
+package com.bankingeconomy.service.kafka.consumer;
 
 
 import com.bankingeconomy.event.TransferEvent;
