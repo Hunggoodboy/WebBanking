@@ -6,7 +6,7 @@ const BANKING_CONFIG = {
   ACCOUNT_LOOKUP_ENDPOINT: "/accounts/lookup",
   MY_BALANCE_ENDPOINT: "/reports/my-balance",
   RECENT_TRANSACTIONS_ENDPOINT: "/reports/my-transactions?page=0&size=5",
-  TRANSFER_ENDPOINT: "/v1/transfer/execute",
+  TRANSFER_ENDPOINT: "/transactions/transfer",
   ADMIN_DASHBOARD_PAGE: "/admin/dashboard",
 };
 

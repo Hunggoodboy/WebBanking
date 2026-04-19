@@ -1,6 +1,7 @@
 package com.bankingeconomy.service.kafka.consumer;
 
-import com.bankingeconomy.event.TransferEvent;
+import com.bankingeconomy.dto.event.TransferEvent;
+import com.bankingeconomy.service.Impl.TransactionProcessorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

@@ -1,6 +1,6 @@
 package com.bankingeconomy.kafka;
 
-import com.bankingeconomy.event.TransferEvent;
+import com.bankingeconomy.dto.event.TransferEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

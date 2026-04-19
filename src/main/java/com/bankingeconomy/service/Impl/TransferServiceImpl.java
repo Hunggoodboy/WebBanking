@@ -16,7 +16,6 @@ import com.bankingeconomy.service.TransferService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -38,15 +37,9 @@ public class TransferServiceImpl implements TransferService {
     private static final String TRANSFER_TOPIC = "transfer-topic";
 
     @Override
-    @Transactional // Rất quan trọng: Đảm bảo tính nguyên tử của việc lưu DB
-    public TransferResponse initiateTransfer(TransferRequest request) {
+    @Transactional
+    public TransferResponse initiateTransfer(User currentUser, TransferRequest request) {
 
-        // 1. Lấy User hiện tại (An toàn hơn khi lấy từ SecurityContext)
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        // 2. Lấy tài khoản nguồn (Hệ thống tự chọn tài khoản ACTIVE)
         Account fromAccount = accountRepository
                 .findByUserIdAndStatus(currentUser.getId(), Account.AccountStatus.ACTIVE)
                 .stream()
@@ -84,7 +77,6 @@ public class TransferServiceImpl implements TransferService {
         // Lấy ID thật từ DB để làm khóa liên kết cho Kafka
         String txId = saved.getId().toString();
 
-        // 6. BUILD EVENT ĐẦY ĐỦ (Kết hợp V1)
         TransferEvent event = TransferEvent.builder()
                 .eventId(UUID.randomUUID().toString()) // ID duy nhất của message
                 .transactionId(txId)                   // ID thực tế trong DB

@@ -1,7 +1,7 @@
 package com.bankingeconomy.controller;
 
-import com.bankingeconomy.event.TransferEvent;
-import com.bankingeconomy.service.kafka.consumer.TransactionProcessorService;
+import com.bankingeconomy.dto.event.TransferEvent;
+import com.bankingeconomy.service.Impl.TransactionProcessorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

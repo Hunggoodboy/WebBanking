@@ -6,21 +6,22 @@ import com.bankingeconomy.dto.response.TransferResponse;
 import com.bankingeconomy.entity.User;
 import com.bankingeconomy.service.TransferService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/transfer")
+@RequestMapping("/api/transactions")
 @RequiredArgsConstructor
 public class TransferController {
 
-    private final TransferService transferService;
+    private final TransferService transferService; // Gọi Service khởi tạo
 
-    @PostMapping("/execute")
-    public ResponseData<TransferResponse> transfer(@AuthenticationPrincipal User currentUser, @RequestBody TransferRequest request) {
-        System.out.println(request.toString());
-        TransferResponse result = transferService.initiateTransfer(currentUser, request);
-        return new ResponseData<>(200, "Success", result);
+    @PostMapping("/transfer")
+    public ResponseEntity<TransferResponse> initiate(@AuthenticationPrincipal User user,
+                                                     @RequestBody TransferRequest request) {
+        TransferResponse response = transferService.initiateTransfer(user, request);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 }
-

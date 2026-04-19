@@ -1,4 +1,4 @@
-package com.bankingeconomy.kafka;
+package com.bankingeconomy.service.kafka.consumer;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;

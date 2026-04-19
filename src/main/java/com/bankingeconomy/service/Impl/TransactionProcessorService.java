@@ -1,9 +1,9 @@
-package com.bankingeconomy.service.kafka.consumer;
+package com.bankingeconomy.service.Impl;
 
+import com.bankingeconomy.dto.event.TransferEvent;
 import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.Transaction;
-import com.bankingeconomy.event.TransferEvent;
-import com.bankingeconomy.event.TransferEvent.TransferStatus;
+
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
@@ -42,7 +42,7 @@ public class TransactionProcessorService {
 
         // 3. Cập nhật trạng thái đang xử lý
         transactionRepository.updateStatus(txId, "PROCESSING");
-        event.setStatus(TransferStatus.PROCESSING);
+        event.setStatus(TransferEvent.TransferStatus.PROCESSING);
 
         try {
             // 4. Thực hiện trừ tiền và cộng tiền
@@ -51,7 +51,7 @@ public class TransactionProcessorService {
 
             // 5. Cập nhật thành công cho cả DB và Kafka Event
             transactionRepository.updateStatus(txId, "SUCCESS");
-            event.setStatus(TransferStatus.COMPLETED);
+            event.setStatus(TransferEvent.TransferStatus.COMPLETED);
 
             log.info("Giao dịch hoàn tất thành công: txId={}", txId);
 
@@ -61,7 +61,7 @@ public class TransactionProcessorService {
             // 6. Rollback nghiệp vụ & cập nhật trạng thái lỗi
             handleRollback(tx);
             transactionRepository.updateStatus(txId, "FAILED");
-            event.setStatus(TransferStatus.FAILED);
+            event.setStatus(TransferEvent.TransferStatus.FAILED);
         }
     }
 
