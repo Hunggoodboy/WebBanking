@@ -12,13 +12,23 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
-    @Query("SELECT t from Transaction t WHERE t.fromAccount.id = :accountId OR t.toAccount.id = :accountId")
+
+    @Query("SELECT t FROM Transaction t WHERE t.fromAccount.id = :accountId OR t.toAccount.id = :accountId")
     Page<Transaction> findAllByAccountId(UUID accountId, Pageable pageable);
 
-    @Query("SELECT t from Transaction t " +
+    @Query("SELECT t FROM Transaction t " +
             "WHERE (t.fromAccount.id = :accountId OR t.toAccount.id = :accountId) " +
-            "AND (t.createdAt >= :start OR t.createdAt < :end)")
-    Page<Transaction> findAllByAccountIdBetween(UUID accountId, LocalDateTime start, LocalDateTime end, Pageable pageable);
+            "AND t.createdAt >= :start AND t.createdAt < :end")
+    Page<Transaction> findAllByAccountIdBetween(
+            @Param("accountId") UUID accountId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            Pageable pageable);
+
+    // Cập nhật status giao dịch — dùng trong Kafka consumer sau khi xử lý
+    @Modifying
+    @Query("UPDATE Transaction t SET t.status = :status WHERE t.id = :id")
+    void updateStatus(@Param("id") UUID id, @Param("status") String status);
 
     @Query("select new com.bankingeconomy.dto.HdfsTransactionDTO(t.id, t.amount, t.status, t.createdAt, " +
             "fromAcc.accountNumber, fromAcc.user.id, fromAcc.user.province, fromAcc.user.district, " +
@@ -27,4 +37,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             "join t.fromAccount fromAcc " +
             "join t.toAccount toAcc ")
     List<HdfsTransactionDTO> findAllTransactions();
+}
 }

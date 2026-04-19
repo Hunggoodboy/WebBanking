@@ -1,65 +1,113 @@
 package com.bankingeconomy.service.kafka.consumer;
 
+import com.bankingeconomy.entity.Account;
+import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.event.TransferEvent;
 import com.bankingeconomy.event.TransferEvent.TransferStatus;
+import com.bankingeconomy.exception.AppException;
+import com.bankingeconomy.exception.ErrorCode;
+import com.bankingeconomy.repository.AccountRepository;
+import com.bankingeconomy.repository.TransactionRepository;
+import com.bankingeconomy.service.BalanceCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TransactionProcessorService {
 
-    public void processTransaction(TransferEvent event) {
+    private final TransactionRepository transactionRepository;
+    private final AccountRepository accountRepository;
+    private final BalanceCacheService balanceCacheService;
 
-        log.info("Start processing eventId={} status={}", event.getEventId(), event.getStatus());
+    @Transactional
+    public void processTransaction(TransferEvent event) {
+        // 1. Chuyển đổi ID từ Event
+        UUID txId = UUID.fromString(event.getTransactionId());
+        log.info("Bắt đầu xử lý giao dịch: txId={} eventId={}", txId, event.getEventId());
+
+        // 2. Kiểm tra Idempotency (Chống xử lý trùng lặp)
+        Transaction tx = transactionRepository.findById(txId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch trong DB: " + txId));
+
+        if (!"PENDING".equals(tx.getStatus())) {
+            log.warn("Giao dịch txId={} đã được xử lý trước đó (status={}). Bỏ qua.", txId, tx.getStatus());
+            return;
+        }
+
+        // 3. Cập nhật trạng thái đang xử lý
+        transactionRepository.updateStatus(txId, "PROCESSING");
+        event.setStatus(TransferStatus.PROCESSING);
 
         try {
-            // 1. Update status → PROCESSING
-            event.setStatus(TransferStatus.PROCESSING);
+            // 4. Thực hiện trừ tiền và cộng tiền
+            handleDebit(tx);
+            handleCredit(tx);
 
-            // 2. Debit from sender
-            handleDebit(event);
-
-            // 3. Credit to receiver
-            handleCredit(event);
-
-            // 4. Mark success
+            // 5. Cập nhật thành công cho cả DB và Kafka Event
+            transactionRepository.updateStatus(txId, "SUCCESS");
             event.setStatus(TransferStatus.COMPLETED);
-            log.info("Transaction completed: eventId={}", event.getEventId());
+
+            log.info("Giao dịch hoàn tất thành công: txId={}", txId);
 
         } catch (Exception e) {
-            // 5. Handle failure
-            event.setStatus(TransferStatus.FAILED);
-            log.error("Transaction failed: eventId={}, error={}", event.getEventId(), e.getMessage(), e);
+            log.error("Xử lý giao dịch thất bại: txId={} | Lỗi: {}", txId, e.getMessage());
 
-            // OPTIONAL: rollback / compensate
-            handleRollback(event);
+            // 6. Rollback nghiệp vụ & cập nhật trạng thái lỗi
+            handleRollback(tx);
+            transactionRepository.updateStatus(txId, "FAILED");
+            event.setStatus(TransferStatus.FAILED);
         }
     }
 
-    private void handleDebit(TransferEvent event) {
-        log.info("Debiting {} from account {}", event.getAmount(), event.getFromAccountId());
+    private void handleDebit(Transaction tx) {
+        Account from = accountRepository.findById(tx.getFromAccount().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        // TODO:
-        // 1. Check balance (Redis / BalanceCacheService)
-        // 2. Call AccountService.debit()
-        // 3. Throw exception if insufficient balance
+        if (from.getBalance() < tx.getAmount()) {
+            throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
+        }
+
+        // Trừ tiền DB
+        from.setBalance(from.getBalance() - tx.getAmount());
+        accountRepository.save(from);
+
+        // Xóa Cache Redis để lần sau khách xem số dư sẽ lấy số mới từ DB
+        balanceCacheService.evictBalance(from.getId());
+
+        log.info("Đã trừ tiền: account={} | balance mới={}", from.getAccountNumber(), from.getBalance());
     }
 
-    private void handleCredit(TransferEvent event) {
-        log.info("Crediting {} to account {}", event.getAmount(), event.getToAccountId());
+    private void handleCredit(Transaction tx) {
+        Account to = accountRepository.findById(tx.getToAccount().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        // TODO:
-        // Call AccountService.credit()
+        // Cộng tiền DB
+        to.setBalance(to.getBalance() + tx.getAmount());
+        accountRepository.save(to);
+
+        // Cập nhật Cache Redis cho người nhận
+        balanceCacheService.evictBalance(to.getId());
+
+        log.info("Đã cộng tiền: account={} | balance mới={}", to.getAccountNumber(), to.getBalance());
     }
 
-    private void handleRollback(TransferEvent event) {
-        log.warn("Rolling back transaction: eventId={}", event.getEventId());
-
-        // TODO (important in real system):
-        // - If debit succeeded but credit failed → refund
-        // - Use saga / compensation pattern
+    private void handleRollback(Transaction tx) {
+        log.warn("Đang thực hiện hoàn tiền cho giao dịch lỗi txId={}", tx.getId());
+        try {
+            Account from = accountRepository.findById(tx.getFromAccount().getId()).orElse(null);
+            if (from != null) {
+                from.setBalance(from.getBalance() + tx.getAmount());
+                accountRepository.save(from);
+                balanceCacheService.evictBalance(from.getId());
+            }
+        } catch (Exception e) {
+            log.error("LỖI NGHIÊM TRỌNG: Không thể hoàn tiền cho txId={}", tx.getId());
+        }
     }
 }

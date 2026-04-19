@@ -1,10 +1,5 @@
 package com.bankingeconomy.event;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.Objects;
-import java.util.UUID;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Data
@@ -19,6 +15,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransferEvent {
+
+    // ID của Transaction đã lưu DB — dùng làm idempotency key
+    private String transactionId;
 
     private String eventId;
     private String fromAccountId;
@@ -39,20 +38,18 @@ public class TransferEvent {
         REVERSED
     }
 
-    /**
-     * Factory method tạo event chuẩn
-     */
     public static TransferEvent of(
+            String transactionId,
             String fromAccountId,
             String toAccountId,
             String senderUserId,
             String receiverUserId,
             BigDecimal amount
     ) {
-
         validate(fromAccountId, toAccountId, senderUserId, receiverUserId, amount);
 
         return TransferEvent.builder()
+                .transactionId(transactionId)
                 .eventId(UUID.randomUUID().toString())
                 .fromAccountId(fromAccountId)
                 .toAccountId(toAccountId)
@@ -65,32 +62,24 @@ public class TransferEvent {
                 .build();
     }
 
-    /**
-     * Validate dữ liệu đầu vào
-     */
-   private static void validate(
-        String fromAccountId,
-        String toAccountId,
-        String senderUserId,
-        String receiverUserId,
-        BigDecimal amount
-) {
-    Objects.requireNonNull(fromAccountId, "ID tài khoản nguồn không được rỗng");
-    Objects.requireNonNull(toAccountId, "ID tài khoản đích không được rỗng");
-    Objects.requireNonNull(senderUserId, "ID người dùng thực hiện giao dịch không được rỗng");
-    Objects.requireNonNull(receiverUserId, "ID người dùng nhận tiền không được rỗng");
-    Objects.requireNonNull(amount, "Số tiền chuyển không được rỗng");
+    private static void validate(
+            String fromAccountId,
+            String toAccountId,
+            String senderUserId,
+            String receiverUserId,
+            BigDecimal amount
+    ) {
+        Objects.requireNonNull(fromAccountId, "ID tài khoản nguồn không được rỗng");
+        Objects.requireNonNull(toAccountId, "ID tài khoản đích không được rỗng");
+        Objects.requireNonNull(senderUserId, "ID người gửi không được rỗng");
+        Objects.requireNonNull(receiverUserId, "ID người nhận không được rỗng");
+        Objects.requireNonNull(amount, "Số tiền không được rỗng");
 
-    if (fromAccountId.equals(toAccountId)) {
-        throw new IllegalArgumentException("Không thể chuyển tiền đến cùng một tài khoản");
+        if (fromAccountId.equals(toAccountId)) {
+            throw new IllegalArgumentException("Không thể chuyển tiền đến cùng một tài khoản");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số tiền phải lớn hơn 0");
+        }
     }
-
-    if (senderUserId.equals(receiverUserId)) {
-        throw new IllegalArgumentException("Người gửi và người nhận không được là cùng một người");
-    }
-
-    if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-        throw new IllegalArgumentException("Số tiền phải lớn hơn 0");
-    }
-}
 }

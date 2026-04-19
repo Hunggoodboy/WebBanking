@@ -4,19 +4,22 @@ import com.bankingeconomy.dto.event.TransferEvent;
 import com.bankingeconomy.dto.request.TransferRequest;
 import com.bankingeconomy.dto.response.TransferResponse;
 import com.bankingeconomy.entity.Account;
+import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.entity.User;
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
+import com.bankingeconomy.repository.TransactionRepository;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.BalanceCacheService;
 import com.bankingeconomy.service.TransferService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -29,68 +32,77 @@ public class TransferServiceImpl implements TransferService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
     private final BalanceCacheService balanceCacheService;
 
     private static final String TRANSFER_TOPIC = "transfer-topic";
 
     @Override
-    public TransferResponse initiateTransfer(User currentUser, TransferRequest request) {
+    @Transactional // Rất quan trọng: Đảm bảo tính nguyên tử của việc lưu DB
+    public TransferResponse initiateTransfer(TransferRequest request) {
 
-        // ── 3. Lấy tài khoản ACTIVE của user (lấy tài khoản đầu tiên ACTIVE) ──
+        // 1. Lấy User hiện tại (An toàn hơn khi lấy từ SecurityContext)
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // 2. Lấy tài khoản nguồn (Hệ thống tự chọn tài khoản ACTIVE)
         Account fromAccount = accountRepository
                 .findByUserIdAndStatus(currentUser.getId(), Account.AccountStatus.ACTIVE)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        // ── 4. Kiểm tra tài khoản đích tồn tại ────────────────────────────
+        // 3. Kiểm tra tài khoản đích
         Account toAccount = accountRepository
                 .findByAccountNumber(request.getToAccountNumber())
                 .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        // ── 5. Không cho chuyển tiền vào chính mình ────────────────────────
         if (fromAccount.getAccountNumber().equals(request.getToAccountNumber())) {
             throw new AppException(ErrorCode.INVALID_INPUT);
         }
 
-        // ── 6. Kiểm tra số dư (Redis cache-first, fallback DB) ─────────────
-        boolean hasSufficientBalance = balanceCacheService.hasEnoughBalance(
+        // 4. Kiểm tra nhanh số dư qua Redis (Để chặn sớm yêu cầu không hợp lệ)
+        boolean sufficient = balanceCacheService.hasEnoughBalance(
                 fromAccount.getId(),
                 request.getAmount().doubleValue()
         );
-        if (!hasSufficientBalance) {
+        if (!sufficient) {
             throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
         }
 
-        // ── 7. Build và gửi event lên Kafka ───────────────────────────────
-        String txId = UUID.randomUUID().toString();
+        // 5. LƯU PENDING TRANSACTION (Bước chốt chặn của V2)
+        Transaction pendingTx = new Transaction();
+        pendingTx.setFromAccount(fromAccount);
+        pendingTx.setToAccount(toAccount);
+        pendingTx.setAmount(request.getAmount().doubleValue());
+        pendingTx.setDescription(request.getDescription());
+        pendingTx.setStatus("PENDING");
+        pendingTx.setCreatedAt(LocalDateTime.now());
+        Transaction saved = transactionRepository.save(pendingTx);
 
+        // Lấy ID thật từ DB để làm khóa liên kết cho Kafka
+        String txId = saved.getId().toString();
+
+        // 6. BUILD EVENT ĐẦY ĐỦ (Kết hợp V1)
         TransferEvent event = TransferEvent.builder()
-                .eventId(UUID.randomUUID().toString())
-                .transactionId(txId)
+                .eventId(UUID.randomUUID().toString()) // ID duy nhất của message
+                .transactionId(txId)                   // ID thực tế trong DB
                 .fromAccountId(fromAccount.getId().toString())
                 .toAccountId(toAccount.getId().toString())
                 .fromAccountNumber(fromAccount.getAccountNumber())
-                .toAccountNumber(request.getToAccountNumber())
-                .senderUserId(currentUser.getId().toString())
-                .receiverUserId(toAccount.getUser().getId().toString())
+                .toAccountNumber(toAccount.getAccountNumber())
                 .amount(request.getAmount())
-                .currency("VND")
                 .description(request.getDescription())
                 .status(TransferEvent.TransferStatus.PENDING)
                 .timestamp(Instant.now())
                 .build();
 
+        // 7. Bắn Kafka
         kafkaTemplate.send(TRANSFER_TOPIC, txId, event);
 
-        log.info("Transfer initiated: txId={} from={} to={} amount={}",
-                txId,
-                fromAccount.getAccountNumber(),
-                request.getToAccountNumber(),
-                request.getAmount()
-        );
+        log.info("Yêu cầu chuyển tiền đã được ghi nhận: txId={} | Amount={}", txId, request.getAmount());
 
-        // ── 8. Trả về response ─────────────────────────────────────────────
         return TransferResponse.builder()
                 .message("Yêu cầu chuyển khoản đang được xử lý")
                 .transactionId(txId)
