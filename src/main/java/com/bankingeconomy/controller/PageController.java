@@ -38,4 +38,7 @@ public class PageController {
     public String profile() {
         return "profile";
     }
+
+    @GetMapping("/statistics")
+    public String statistics() {return "Statistics";}
 }

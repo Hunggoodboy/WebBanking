@@ -53,6 +53,7 @@ public class SecurityConfig {
             "/api/user/**"
             ,"/",
             "/my-balance"
+            ,"/statistics"
     };
 
     @Bean
