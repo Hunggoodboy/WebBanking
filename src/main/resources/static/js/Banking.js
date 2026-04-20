@@ -4,10 +4,19 @@ const BANKING_CONFIG = {
   ACCOUNTS_ENDPOINT: "/accounts/me",
   ACCOUNT_CREATE_ENDPOINT: "/accounts/create",
   ACCOUNT_LOOKUP_ENDPOINT: "/accounts/lookup",
+  SAVED_RECEIVERS_ENDPOINT: "/saved-receivers",
   MY_BALANCE_ENDPOINT: "/reports/my-balance",
   RECENT_TRANSACTIONS_ENDPOINT: "/reports/my-transactions?page=0&size=5",
   TRANSFER_ENDPOINT: "/transactions/transfer",
   ADMIN_DASHBOARD_PAGE: "/admin/dashboard",
+};
+
+const transferPageState = {
+  savedReceivers: [],
+};
+
+const dashboardState = {
+  savedReceivers: [],
 };
 
 const DEFAULT_NOTIFICATIONS = [
@@ -32,12 +41,18 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function initDashboardPage() {
-  if (!requireAuth()) return;
+  const isAuthenticated = hasAuthToken();
+  setupDashboardProfileMenu(isAuthenticated);
 
   const storedUser = readStoredUser();
-  if (storedUser) {
+  if (storedUser && isAuthenticated) {
     hydrateUserHeader(storedUser);
     toggleAdminDashboardLinks(storedUser);
+  }
+
+  if (!isAuthenticated) {
+    renderGuestDashboard();
+    return;
   }
 
   const [profileResult, accountsResult, balanceResult, recentTransactionsResult] = await Promise.all([
@@ -61,9 +76,11 @@ async function initDashboardPage() {
   }
 
   bindAccountRegistrationForm();
+  bindDashboardReceiverActions();
   toggleAccountRegistrationSection(!accounts.length);
   renderDashboardSummary(accounts, primaryAccount, savingsAccount, recentTransactions, backendBalance);
   renderRecentTransactions(recentTransactions);
+  await loadDashboardSavedReceivers();
 
   if (!accountsResult.ok && !balanceResult.ok) {
     showBanner(
@@ -99,6 +116,7 @@ async function initTransferPage() {
   const submitBtn = document.getElementById("transferSubmitBtn");
   const receiverAccountInput = document.getElementById("receiverAccount");
   const bankCodeSelect = document.getElementById("bankCode");
+  const savedAccountsList = document.getElementById("savedReceiverAccountsList");
   let receiverLookup = null;
 
   const [profileResult, accountsResult] = await Promise.all([
@@ -121,6 +139,18 @@ async function initTransferPage() {
   }
 
   populateTransferBankOptions(bankCodeSelect);
+  await loadSavedReceiverAccounts(receiverAccountInput);
+
+  const presetAccountNumber = new URLSearchParams(window.location.search).get("accountNumber");
+  if (presetAccountNumber) {
+    receiverAccountInput.value = String(presetAccountNumber).replace(/[^\d]/g, "");
+    receiverLookup = await lookupReceiverAccount(receiverAccountInput.value, {
+      onSuccess: async (lookup, accountNumber) => {
+        await saveReceiverAccount(accountNumber);
+        await loadSavedReceiverAccounts(receiverAccountInput);
+      },
+    });
+  }
 
   document.querySelectorAll("[data-quick-amount]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -131,32 +161,34 @@ async function initTransferPage() {
   });
 
   receiverAccountInput.addEventListener("input", () => {
+    receiverAccountInput.value = receiverAccountInput.value.replace(/[^\d]/g, "");
     receiverLookup = null;
     clearTransferMessages();
   });
 
   receiverAccountInput.addEventListener("blur", async () => {
-    const accountNumber = receiverAccountInput.value.trim();
-    if (!accountNumber) {
+    receiverLookup = await lookupReceiverAccount(receiverAccountInput.value, {
+      onSuccess: async (lookup, accountNumber) => {
+        await saveReceiverAccount(accountNumber);
+        await loadSavedReceiverAccounts(receiverAccountInput);
+      },
+    });
+  });
+
+  savedAccountsList?.addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-account-number]");
+    if (!button) {
       return;
     }
 
-    setText("receiverName", "Đang tra cứu người nhận...");
-    const lookupResult = await fetchJson(
-      `${BANKING_CONFIG.ACCOUNT_LOOKUP_ENDPOINT}?accountNumber=${encodeURIComponent(accountNumber)}`,
-      { method: "GET" },
-    );
-
-    if (!lookupResult.ok) {
-      receiverLookup = null;
-      setText("receiverAccountError", lookupResult.message || "Không tìm thấy tài khoản người nhận.");
-      setText("receiverName", "");
-      return;
-    }
-
-    receiverLookup = extractLookupAccount(lookupResult.data);
-    const receiverName = receiverLookup?.accountHolderName || "Không rõ chủ tài khoản";
-    setText("receiverName", `Người nhận: ${receiverName}`);
+    const accountNumber = button.dataset.accountNumber || "";
+    receiverAccountInput.value = accountNumber;
+    receiverLookup = await lookupReceiverAccount(accountNumber, {
+      onSuccess: async (lookup, savedAccountNumber) => {
+        await saveReceiverAccount(savedAccountNumber);
+        await loadSavedReceiverAccounts(receiverAccountInput);
+      },
+    });
   });
 
   form.addEventListener("submit", async (event) => {
@@ -192,7 +224,18 @@ async function initTransferPage() {
       transferResult.message || transferResult.data?.data?.message || "Chuyển khoản thành công.",
       "success",
     );
+
+    if (receiverLookup?.accountNumber) {
+      await saveReceiverAccount(receiverLookup.accountNumber);
+      await loadSavedReceiverAccounts(receiverAccountInput);
+    }
+
     form.reset();
+    receiverLookup = null;
+    ["receiverAccountError", "bankCodeError", "amountError", "descriptionError", "receiverName"].forEach((id) => {
+      setText(id, "");
+    });
+    renderSavedReceiverAccounts(receiverAccountInput);
 
     if (primaryAccount) {
       primaryAccount.balance = Math.max(0, Number(primaryAccount.balance || 0) - payload.amount);
@@ -256,9 +299,12 @@ async function fetchJson(endpoint, options = {}) {
   }
 }
 
+function hasAuthToken() {
+  return Boolean(localStorage.getItem("token"));
+}
+
 function requireAuth() {
-  const token = localStorage.getItem("token");
-  if (token) {
+  if (hasAuthToken()) {
     return true;
   }
 
@@ -351,6 +397,65 @@ function hydrateUserHeader(user) {
   setText("headerUserName", name);
   setText("headerUserTier", resolveUserSubtitle(user));
   setText("userInitials", getInitials(name));
+}
+
+function setupDashboardProfileMenu(isAuthenticated) {
+  const menuButton = document.getElementById("dashboardProfileMenuBtn");
+  const menu = document.getElementById("dashboardProfileMenu");
+  const items = document.getElementById("dashboardProfileMenuItems");
+  if (!menuButton || !menu || !items) return;
+
+  items.innerHTML = isAuthenticated
+    ? `
+      <button
+        id="dashboardLogoutBtn"
+        type="button"
+        class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left font-semibold text-rose-600 transition hover:bg-rose-50"
+      >
+        <span>Đăng xuất</span>
+        <span>↗</span>
+      </button>
+    `
+    : `
+      <a href="/login" class="flex items-center justify-between rounded-xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-600">
+        <span>Đăng nhập</span>
+        <span>↗</span>
+      </a>
+      <a href="/register" class="flex items-center justify-between rounded-xl px-4 py-3 font-semibold text-cyan-700 transition hover:bg-cyan-50">
+        <span>Đăng ký</span>
+        <span>↗</span>
+      </a>
+    `;
+
+  menuButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    menu.classList.toggle("hidden");
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!menu.contains(event.target) && !menuButton.contains(event.target)) {
+      menu.classList.add("hidden");
+    }
+  });
+
+  items.querySelector("#dashboardLogoutBtn")?.addEventListener("click", () => {
+    clearAuthData();
+    window.location.href = "/dashboard";
+  });
+}
+
+function renderGuestDashboard() {
+  setText("headerUserName", "Khách");
+  setText("headerUserTier", "Vui lòng đăng nhập để xem đầy đủ tính năng");
+  setText("userInitials", "KH");
+  hideBanner("dashboardStatus");
+  toggleAccountRegistrationSection(false);
+  renderRecentTransactions([]);
+  renderAccounts([]);
+  renderNotifications(DEFAULT_NOTIFICATIONS);
+  renderDashboardSavedReceivers([]);
+  setText("dashboardRecentReceiverCount", "0");
+  setText("dashboardRecentReceiverSynced", "0");
 }
 
 function bindAccountRegistrationForm() {
@@ -532,6 +637,78 @@ function renderNotifications(notifications) {
   `).join("");
 }
 
+function clearAuthData() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
+  localStorage.removeItem("authEmail");
+}
+
+function bindDashboardReceiverActions() {
+  document.getElementById("refreshDashboardReceiversBtn")?.addEventListener("click", async () => {
+    await loadDashboardSavedReceivers();
+  });
+}
+
+async function loadDashboardSavedReceivers() {
+  setDashboardReceiverRefreshState(true);
+  const result = await fetchJson(BANKING_CONFIG.SAVED_RECEIVERS_ENDPOINT, { method: "GET" });
+  if (!result.ok) {
+    dashboardState.savedReceivers = [];
+    renderDashboardSavedReceivers([]);
+    setText("dashboardRecentReceiverCount", "0");
+    setText("dashboardRecentReceiverSynced", "0");
+    showBanner("dashboardRecentReceiversStatus", result.message || "Không lấy được người nhận gần đây.", "error");
+    setDashboardReceiverRefreshState(false);
+    return;
+  }
+
+  hideBanner("dashboardRecentReceiversStatus");
+  const items = Array.isArray(result.data?.data) ? result.data.data : [];
+  dashboardState.savedReceivers = items;
+  renderDashboardSavedReceivers(items);
+  setText("dashboardRecentReceiverCount", String(items.length));
+  setText("dashboardRecentReceiverSynced", String(items.length));
+  setDashboardReceiverRefreshState(false);
+}
+
+function renderDashboardSavedReceivers(items) {
+  const container = document.getElementById("dashboardRecentReceivers");
+  if (!container) return;
+
+  if (!items.length) {
+    container.innerHTML = `
+      <div class="lg:col-span-2 rounded-[28px] border border-dashed border-slate-200 bg-white/75 px-5 py-10 text-center text-sm text-slate-500">
+        Chưa có người nhận nào từ các giao dịch gần đây để hiển thị trên dashboard.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = items.map((item) => `
+    <a
+      href="/transfer?accountNumber=${encodeURIComponent(item.accountNumber || "")}"
+      class="group block rounded-[28px] border border-slate-200/90 bg-white/90 px-5 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-200 hover:bg-white hover:shadow-[0_18px_34px_rgba(14,165,233,0.14)]"
+    >
+      <p class="truncate text-lg font-black uppercase tracking-[0.02em] text-slate-800 transition group-hover:text-cyan-700">
+        ${escapeHtml(item.accountHolderName || "KHONG RO CHU TAI KHOAN")}/${escapeHtml(item.accountNumber || "")}
+      </p>
+    </a>
+  `).join("");
+}
+
+function setDashboardReceiverRefreshState(isLoading) {
+  const button = document.getElementById("refreshDashboardReceiversBtn");
+  const text = document.getElementById("refreshDashboardReceiversText");
+  const icon = document.getElementById("refreshDashboardReceiversIcon");
+  if (!button || !text || !icon) return;
+
+  button.disabled = isLoading;
+  text.textContent = isLoading ? "Đang tải..." : "Làm mới";
+  icon.textContent = isLoading ? "⟳" : "↻";
+  icon.classList.toggle("animate-spin", isLoading);
+}
+
 function validateTransferPayload(payload, primaryAccount, receiverLookup) {
   let valid = true;
 
@@ -559,6 +736,37 @@ function validateTransferPayload(payload, primaryAccount, receiverLookup) {
   return valid;
 }
 
+async function lookupReceiverAccount(rawAccountNumber, options = {}) {
+  const accountNumber = String(rawAccountNumber || "").trim().replace(/[^\d]/g, "");
+  if (!accountNumber) {
+    return null;
+  }
+
+  clearTransferMessages();
+  setText("receiverName", "Đang tra cứu người nhận...");
+
+  const lookupResult = await fetchJson(
+    `${BANKING_CONFIG.ACCOUNT_LOOKUP_ENDPOINT}?accountNumber=${encodeURIComponent(accountNumber)}`,
+    { method: "GET" },
+  );
+
+  if (!lookupResult.ok) {
+    setText("receiverAccountError", lookupResult.message || "Không tìm thấy tài khoản người nhận.");
+    setText("receiverName", "");
+    return null;
+  }
+
+  const receiverLookup = extractLookupAccount(lookupResult.data);
+  const receiverName = receiverLookup?.accountHolderName || "Không rõ chủ tài khoản";
+  setText("receiverName", `Người nhận: ${receiverName}`);
+
+  if (typeof options.onSuccess === "function") {
+    options.onSuccess(receiverLookup, accountNumber);
+  }
+
+  return receiverLookup;
+}
+
 function populateTransferBankOptions(select) {
   if (!select) return;
   select.innerHTML = `
@@ -582,6 +790,66 @@ function clearTransferMessages() {
     }
   });
   hideBanner("transferStatus");
+}
+
+async function loadSavedReceiverAccounts(activeInput) {
+  const result = await fetchJson(BANKING_CONFIG.SAVED_RECEIVERS_ENDPOINT, { method: "GET" });
+  transferPageState.savedReceivers = result.ok && Array.isArray(result.data?.data)
+    ? result.data.data
+    : [];
+  renderSavedReceiverAccounts(activeInput);
+}
+
+async function saveReceiverAccount(accountNumber) {
+  const normalizedAccountNumber = String(accountNumber || "").trim().replace(/[^\d]/g, "");
+  if (!normalizedAccountNumber) {
+    return null;
+  }
+
+  const result = await fetchJson(BANKING_CONFIG.SAVED_RECEIVERS_ENDPOINT, {
+    method: "POST",
+    body: JSON.stringify({ accountNumber: normalizedAccountNumber }),
+  });
+
+  return result.ok ? result.data?.data || null : null;
+}
+
+function renderSavedReceiverAccounts(activeInput) {
+  const datalist = document.getElementById("savedReceiverAccounts");
+  const list = document.getElementById("savedReceiverAccountsList");
+  const wrap = document.getElementById("savedReceiverAccountsWrap");
+  if (!datalist || !list || !wrap) return;
+
+  const savedItems = Array.isArray(transferPageState.savedReceivers) ? transferPageState.savedReceivers : [];
+
+  datalist.innerHTML = savedItems.map((item) => `
+    <option value="${escapeHtml(item.accountNumber)}">${escapeHtml(item.accountHolderName || "Tài khoản đã lưu")}</option>
+  `).join("");
+
+  if (!savedItems.length) {
+    list.innerHTML = "";
+    wrap.classList.add("hidden");
+    return;
+  }
+
+  const activeValue = String(activeInput?.value || "").trim();
+  list.innerHTML = savedItems.map((item) => {
+    const isActive = activeValue === item.accountNumber;
+    const buttonClass = isActive
+      ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+      : "border-gray-200 bg-white text-gray-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700";
+
+    return `
+      <button
+        type="button"
+        data-account-number="${escapeHtml(item.accountNumber)}"
+        class="rounded-full border px-3 py-1.5 text-sm font-medium transition ${buttonClass}"
+      >
+        ${escapeHtml(item.accountNumber)}
+      </button>
+    `;
+  }).join("");
+  wrap.classList.remove("hidden");
 }
 
 function showBanner(id, message, variant) {

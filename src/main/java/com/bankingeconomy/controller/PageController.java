@@ -41,4 +41,7 @@ public class PageController {
 
     @GetMapping("/statistics")
     public String statistics() {return "Statistics";}
+
+    @GetMapping("/beneficiaries")
+    public String beneficiaries() {return "Beneficiaries";}
 }
