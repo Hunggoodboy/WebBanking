@@ -118,6 +118,7 @@ body::after {
   height: 220px;
   border-radius: 50%;
   background: radial-gradient(circle at center, rgba(17, 166, 161, 0.25) 0%, rgba(17, 166, 161, 0) 68%);
+  pointer-events: none;
 }
 
 .hero-top,
@@ -179,12 +180,16 @@ body::after {
 .primary-btn,
 .secondary-btn,
 .page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 700;
   padding: 11px 16px;
   cursor: pointer;
+  text-decoration: none;
   transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.2s ease;
 }
 

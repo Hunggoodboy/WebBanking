@@ -4,24 +4,22 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.checkerframework.checker.units.qual.A;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class UserResponseDTO {
+@AllArgsConstructor
+public class SavedReceiverAccountResponse {
     private UUID id;
+    private UUID targetUserId;
+    private UUID targetAccountId;
+    private String accountNumber;
+    private String accountHolderName;
     private String email;
-    private String fullName;
     private String phone;
-    private String province;
-    private String district;
-    private String identityCard;
-    private String gender;
-    private String role;
-    private LocalDateTime createdAt;
+    private String status;
+    private LocalDateTime updatedAt;
 }

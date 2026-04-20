@@ -26,4 +26,8 @@ public class PageController {
 
     @GetMapping("/beneficiaries")
     public String beneficiaries() {return "Beneficiaries";}
+
+    @GetMapping("/profile")
+    public String profile() {return "profile";}
+
 }
