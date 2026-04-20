@@ -114,6 +114,7 @@ async function initTransferPage() {
   const receiverAccountInput = document.getElementById("receiverAccount");
   const bankCodeSelect = document.getElementById("bankCode");
   const savedAccountsList = document.getElementById("savedReceiverAccountsList");
+  const saveReceiverBtn = document.getElementById("saveReceiverBtn");
   let receiverLookup = null;
 
   const [profileResult, accountsResult] = await Promise.all([
@@ -141,12 +142,7 @@ async function initTransferPage() {
   const presetAccountNumber = new URLSearchParams(window.location.search).get("accountNumber");
   if (presetAccountNumber) {
     receiverAccountInput.value = String(presetAccountNumber).replace(/[^\d]/g, "");
-    receiverLookup = await lookupReceiverAccount(receiverAccountInput.value, {
-      onSuccess: async (lookup, accountNumber) => {
-        await saveReceiverAccount(accountNumber);
-        await loadSavedReceiverAccounts(receiverAccountInput);
-      },
-    });
+    receiverLookup = await lookupReceiverAccount(receiverAccountInput.value);
   }
 
   document.querySelectorAll("[data-quick-amount]").forEach((button) => {
@@ -164,12 +160,7 @@ async function initTransferPage() {
   });
 
   receiverAccountInput.addEventListener("blur", async () => {
-    receiverLookup = await lookupReceiverAccount(receiverAccountInput.value, {
-      onSuccess: async (lookup, accountNumber) => {
-        await saveReceiverAccount(accountNumber);
-        await loadSavedReceiverAccounts(receiverAccountInput);
-      },
-    });
+    receiverLookup = await lookupReceiverAccount(receiverAccountInput.value);
   });
 
   savedAccountsList?.addEventListener("click", async (event) => {
@@ -180,12 +171,28 @@ async function initTransferPage() {
 
     const accountNumber = button.dataset.accountNumber || "";
     receiverAccountInput.value = accountNumber;
-    receiverLookup = await lookupReceiverAccount(accountNumber, {
-      onSuccess: async (lookup, savedAccountNumber) => {
-        await saveReceiverAccount(savedAccountNumber);
-        await loadSavedReceiverAccounts(receiverAccountInput);
-      },
-    });
+    receiverLookup = await lookupReceiverAccount(accountNumber);
+  });
+
+  saveReceiverBtn?.addEventListener("click", async () => {
+    const accountNumber = receiverLookup?.accountNumber || receiverAccountInput.value;
+    const normalizedAccountNumber = String(accountNumber || "").trim().replace(/[^\d]/g, "");
+    if (!normalizedAccountNumber) {
+      return;
+    }
+
+    setButtonState(saveReceiverBtn, true, "Đang lưu...");
+    const savedItem = await saveReceiverAccount(normalizedAccountNumber);
+
+    if (!savedItem) {
+      setButtonState(saveReceiverBtn, false, "Lưu");
+      showBanner("transferStatus", "Không thể lưu người nhận này.", "error");
+      return;
+    }
+
+    await loadSavedReceiverAccounts(receiverAccountInput);
+    updateSaveReceiverButton(normalizedAccountNumber);
+    showBanner("transferStatus", "Đã lưu người nhận gần đây.", "success");
   });
 
   form.addEventListener("submit", async (event) => {
@@ -222,16 +229,12 @@ async function initTransferPage() {
       "success",
     );
 
-    if (receiverLookup?.accountNumber) {
-      await saveReceiverAccount(receiverLookup.accountNumber);
-      await loadSavedReceiverAccounts(receiverAccountInput);
-    }
-
     form.reset();
     receiverLookup = null;
     ["receiverAccountError", "bankCodeError", "amountError", "descriptionError", "receiverName"].forEach((id) => {
       setText(id, "");
     });
+    updateSaveReceiverButton("");
     renderSavedReceiverAccounts(receiverAccountInput);
 
     if (primaryAccount) {
@@ -736,11 +739,13 @@ function validateTransferPayload(payload, primaryAccount, receiverLookup) {
 async function lookupReceiverAccount(rawAccountNumber, options = {}) {
   const accountNumber = String(rawAccountNumber || "").trim().replace(/[^\d]/g, "");
   if (!accountNumber) {
+    updateSaveReceiverButton("");
     return null;
   }
 
   clearTransferMessages();
   setText("receiverName", "Đang tra cứu người nhận...");
+  updateSaveReceiverButton("");
 
   const lookupResult = await fetchJson(
     `${BANKING_CONFIG.ACCOUNT_LOOKUP_ENDPOINT}?accountNumber=${encodeURIComponent(accountNumber)}`,
@@ -750,12 +755,14 @@ async function lookupReceiverAccount(rawAccountNumber, options = {}) {
   if (!lookupResult.ok) {
     setText("receiverAccountError", lookupResult.message || "Không tìm thấy tài khoản người nhận.");
     setText("receiverName", "");
+    updateSaveReceiverButton("");
     return null;
   }
 
   const receiverLookup = extractLookupAccount(lookupResult.data);
   const receiverName = receiverLookup?.accountHolderName || "Không rõ chủ tài khoản";
   setText("receiverName", `Người nhận: ${receiverName}`);
+  updateSaveReceiverButton(accountNumber);
 
   if (typeof options.onSuccess === "function") {
     options.onSuccess(receiverLookup, accountNumber);
@@ -786,6 +793,7 @@ function clearTransferMessages() {
       element.textContent = "";
     }
   });
+  updateSaveReceiverButton("");
   hideBanner("transferStatus");
 }
 
@@ -847,6 +855,27 @@ function renderSavedReceiverAccounts(activeInput) {
     `;
   }).join("");
   wrap.classList.remove("hidden");
+}
+
+function updateSaveReceiverButton(accountNumber) {
+  const button = document.getElementById("saveReceiverBtn");
+  if (!button) return;
+
+  const normalizedAccountNumber = String(accountNumber || "").trim().replace(/[^\d]/g, "");
+
+  if (!normalizedAccountNumber) {
+    button.classList.add("hidden");
+    button.disabled = false;
+    button.textContent = "Lưu";
+    return;
+  }
+
+  const alreadySaved = Array.isArray(transferPageState.savedReceivers)
+    && transferPageState.savedReceivers.some((item) => item.accountNumber === normalizedAccountNumber);
+
+  button.classList.remove("hidden");
+  button.disabled = alreadySaved;
+  button.textContent = alreadySaved ? "Đã lưu" : "Lưu";
 }
 
 function showBanner(id, message, variant) {
