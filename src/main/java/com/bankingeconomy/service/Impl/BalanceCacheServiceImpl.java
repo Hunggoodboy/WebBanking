@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -78,6 +79,7 @@ public class BalanceCacheServiceImpl implements BalanceCacheService {
     // Cập nhật số dư → DB + Redis Cache đồng thời
     // ─────────────────────────────────────────
     @Override
+    @Transactional
     public void updateBalance(UUID accountId, double newBalance) {
         // 1. Cập nhật số dư trong DB
         Account account = accountRepository.findById(accountId)
