@@ -24,7 +24,6 @@ public class HadoopController {
 
     private final HdfsService hdfsService;
     private final HDFSReadWriteService hdfsReadWriteService;
-    private final TransactionRepository transactionRepository;
     private final MapReduceRunnerService mapReduceRunnerService;
 
     // API này nhận vào một cái tên và tạo thư mục trên HDFS
@@ -43,6 +42,8 @@ public class HadoopController {
     @GetMapping("/export-to-hdfs")
     public ResponseData<?> exportTransactionsToHDFS() {
         try {
+            hdfsReadWriteService.clearAllTransactionData();
+            System.out.println("Đã xóa dữ liệu cũ trên HDFS trước khi ghi mới.");
             return hdfsReadWriteService.excuteWriteToHdfs();
         } catch (Exception e) {
             e.printStackTrace();

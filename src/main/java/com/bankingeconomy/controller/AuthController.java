@@ -12,15 +12,18 @@ import com.bankingeconomy.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
+import java.util.List;
 
 import static org.apache.kafka.streams.kstream.EmitStrategy.log;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Validated
 @CrossOrigin(origins = "*") // Cho phép Frontend gọi API
 public class AuthController {
 
@@ -38,6 +41,14 @@ public class AuthController {
     public ResponseData<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         RegisterResponse result = userService.register(request);
         return new ResponseData<>(HttpStatus.CREATED.value(), "Đăng ký thành công", result);
+    }
+
+    @PostMapping("/register/bulk")
+    public ResponseData<List<RegisterResponse>> registerBulk(
+            @Valid @RequestBody List<RegisterRequest> requests) {
+        List<RegisterResponse> results = userService.registerBulk(requests);
+        return new ResponseData<>(HttpStatus.CREATED.value(),
+                "Đăng ký " + results.size() + " tài khoản thành công", results);
     }
 
 

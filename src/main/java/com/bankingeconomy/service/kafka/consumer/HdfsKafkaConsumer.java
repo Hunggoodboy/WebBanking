@@ -22,16 +22,11 @@ public class HdfsKafkaConsumer {
     private final HDFSReadWriteServiceImpl  hdfsReadWriteService;
 
     @KafkaListener(topics = "banking.hdfs.sync", groupId = "hdfs-writer-group")
-    public void consumeBatch(List<HdfsTransactionDTO> transactions) {
+    public void consumeBatch(List<HdfsTransactionDTO> transactions) throws IOException {
         log.info("Kafka nhận lô giao dịch từ HDFS: {} giao dịch", transactions.size());
-        try{
-            Map<String, List<String> > partitionedCsvData = processBatchForHdfs(transactions);
-            hdfsReadWriteService.writeTransactionsToHDFS(partitionedCsvData);
-            log.info("Đã đẩy lô {} giao dịch xuống HDFS thành công.", transactions.size());
-        }
-        catch (Exception e){
-            log.error("Lỗi khi xử lý batch giao dịch cho HDFS: {}", e.getMessage(), e);
-        }
+        Map<String, List<String> > partitionedCsvData = processBatchForHdfs(transactions);
+        hdfsReadWriteService.writeTransactionsToHDFS(partitionedCsvData);
+        log.info("Đã đẩy lô {} giao dịch xuống HDFS thành công.", transactions.size());
     }
 
     private Map<String, List<String>> processBatchForHdfs(List<HdfsTransactionDTO> transactions) {
@@ -43,11 +38,11 @@ public class HdfsKafkaConsumer {
             String monthStr = tx.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
             // --- Phía OUT (Người gửi) ---
-            String outProv = (tx.getFromProvince() != null && !tx.getFromProvince().isBlank()) ? tx.getFromProvince() : "UNKNOWN";
-            String outDist = (tx.getFromDistrict() != null && !tx.getFromDistrict().isBlank()) ? tx.getFromDistrict() : "UNKNOWN";
+            String outProv = (normalizeLocationName(tx.getFromProvince()) != null && !tx.getFromProvince().isBlank()) ? tx.getFromProvince() : "UNKNOWN";
+            String outDist = (normalizeLocationName(tx.getFromDistrict()) != null && !tx.getFromDistrict().isBlank()) ? tx.getFromDistrict() : "UNKNOWN";
 
             String outKey = BASE_PATH + String.format("province=%s/district=%s/year=%d/quarter=Q%d/", outProv, outDist, year, quarter);
-            String outCsv = BASE_PATH + String.format("%s,%s,%s,OUT,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
+            String outCsv = String.format("%s,%s,%s,OUT,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
                     tx.getTransactionId(), tx.getFromUserId(), tx.getFromAccountNumber(),
                     tx.getToAccountNumber(), tx.getAmount(), tx.getStatus(), tx.getCreatedAt(),
                     outProv, outDist, year, quarter, monthStr);
@@ -55,10 +50,10 @@ public class HdfsKafkaConsumer {
             partitionData.computeIfAbsent(outKey, k -> new ArrayList<>()).add(outCsv);
 
             // --- Phía IN (Người nhận) ---
-            String inProv = (tx.getToProvince() != null && !tx.getToProvince().isBlank()) ? tx.getToProvince() : "UNKNOWN";
-            String inDist = (tx.getToDistrict() != null && !tx.getToDistrict().isBlank()) ? tx.getToDistrict() : "UNKNOWN";
+            String inProv = (normalizeLocationName(tx.getToProvince()) != null && !tx.getToProvince().isBlank()) ? tx.getToProvince() : "UNKNOWN";
+            String inDist = (normalizeLocationName(tx.getToDistrict()) != null && !tx.getToDistrict().isBlank()) ? tx.getToDistrict() : "UNKNOWN";
 
-            String inKey = String.format("province=%s/district=%s/year=%d/quarter=Q%d/", inProv, inDist, year, quarter);
+            String inKey = BASE_PATH + String.format("province=%s/district=%s/year=%d/quarter=Q%d/", inProv, inDist, year, quarter);
             String inCsv = String.format("%s,%s,%s,IN,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
                     tx.getTransactionId(), tx.getToUserId(), tx.getToAccountNumber(),
                     tx.getFromAccountNumber(), tx.getAmount(), tx.getStatus(), tx.getCreatedAt(),
@@ -68,6 +63,43 @@ public class HdfsKafkaConsumer {
         }
         return partitionData;
     }
+    /**
+     * Hàm chuẩn hóa tên địa danh: "Hà Nội" -> "HaNoi", "thừa thiên huế" -> "ThuaThienHue"
+     */
+    private String normalizeLocationName(String location) {
+        if (location == null || location.trim().isEmpty()) {
+            return "Unknown";
+        }
+        try {
+            // 1. Chuẩn hóa NFD để tách các ký tự dấu ra khỏi chữ cái gốc
+            String temp = java.text.Normalizer.normalize(location.trim(), java.text.Normalizer.Form.NFD);
 
+            // 2. Dùng Regex quét và xóa sạch các ký tự dấu vừa tách
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+            String noAccent = pattern.matcher(temp).replaceAll("");
+
+            // 3. Xử lý trường hợp ngoại lệ: Chữ Đ/đ
+            noAccent = noAccent.replace("Đ", "D").replace("đ", "d");
+
+            // 4. Loại bỏ các ký tự đặc biệt, chỉ giữ lại chữ cái và khoảng trắng
+            noAccent = noAccent.replaceAll("[^a-zA-Z\\s]", "");
+
+            // 5. Cắt từ, viết hoa chữ cái đầu và ghép liền nhau (PascalCase)
+            String[] words = noAccent.split("\\s+");
+            StringBuilder result = new StringBuilder();
+            for (String word : words) {
+                if (!word.isEmpty()) {
+                    // Chữ cái đầu viết hoa, phần còn lại viết thường
+                    result.append(word.substring(0, 1).toUpperCase());
+                    result.append(word.substring(1).toLowerCase());
+                }
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            log.error("Lỗi khi chuẩn hóa địa danh: {}", location, e);
+            return "Unknown";
+        }
+    }
 
 }

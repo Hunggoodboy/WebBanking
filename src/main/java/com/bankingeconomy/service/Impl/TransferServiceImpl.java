@@ -77,6 +77,9 @@ public class TransferServiceImpl implements TransferService {
         // Lấy ID thật từ DB để làm khóa liên kết cho Kafka
         String txId = saved.getId().toString();
 
+        User toUser = userRepository.findById(toAccount.getUser().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         TransferEvent event = TransferEvent.builder()
                 .eventId(UUID.randomUUID().toString()) // ID duy nhất của message
                 .transactionId(txId)                   // ID thực tế trong DB
@@ -84,6 +87,12 @@ public class TransferServiceImpl implements TransferService {
                 .toAccountId(toAccount.getId().toString())
                 .fromAccountNumber(fromAccount.getAccountNumber())
                 .toAccountNumber(toAccount.getAccountNumber())
+                .senderUserId(currentUser.getId().toString())
+                .receiverUserId(toAccount.getUser().getId().toString())
+                .fromProvince(currentUser.getProvince())
+                .fromDistrict(currentUser.getDistrict())
+                .toProvince(toUser.getProvince())
+                .toDistrict(toUser.getDistrict())
                 .amount(request.getAmount())
                 .description(request.getDescription())
                 .status(TransferEvent.TransferStatus.PENDING)

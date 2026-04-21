@@ -17,4 +17,5 @@ public interface HDFSReadWriteService {
     boolean partitionExists(String province, String district, int year, String quarter) throws IOException;
     void deletePartition(String province, String district, int year, String quarter) throws IOException;
     List<String> listAllPartitions() throws IOException;
+    void clearAllTransactionData();
 }

@@ -4,10 +4,12 @@ import com.bankingeconomy.dto.request.ProfileUpdateRequest;
 import com.bankingeconomy.dto.request.RegisterRequest;
 import com.bankingeconomy.dto.response.RegisterResponse;
 import com.bankingeconomy.dto.response.UserResponseDTO;
+import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.User;
 import com.bankingeconomy.enums.Role;
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
+import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +17,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -24,6 +29,7 @@ import java.util.Objects;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -57,6 +63,15 @@ public class UserServiceImpl implements UserService {
         } catch (RuntimeException ex) {
             throw resolveRegisterException(ex);
         }
+
+//        Account account = Account.builder()
+//                .user(user)
+//                .accountNumber(generateAccountNumber())
+//                .balance(100_000_000.0)
+//                .status(Account.AccountStatus.ACTIVE)
+//                .createdAt(new Date())
+//                .build();
+//        accountRepository.save(account);
 
         return RegisterResponse.builder()
                 .email(user.getEmail())
@@ -198,5 +213,19 @@ public class UserServiceImpl implements UserService {
         }
 
         return message == null ? "" : message;
+    }
+    public List<RegisterResponse> registerBulk(List<RegisterRequest> requests) {
+        return requests.stream()
+                .map(this::register)   // tái dùng logic register đơn lẻ
+                .collect(Collectors.toList());
+    }
+    private String generateAccountNumber() {
+        return accountRepository.findAll().stream()
+                .map(Account::getAccountNumber)
+                .filter(n -> n != null && n.matches("\\d+"))
+                .mapToLong(Long::parseLong)
+                .max()
+                .orElse(987654321005L) // nếu chưa có account nào thì bắt đầu từ đây
+                + 1 + ""; // +1 rồi convert sang String
     }
 }

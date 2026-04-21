@@ -10,6 +10,10 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.validation.ObjectError;
+
+
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -19,6 +23,42 @@ import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(
+            HandlerMethodValidationException ex,
+            HttpServletRequest request) {
+
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        ex.getParameterValidationResults().forEach(paramResult ->
+                paramResult.getResolvableErrors().forEach(error -> {
+                    String field = "error";
+                    String message = "Giá trị không hợp lệ";
+
+                    if (error instanceof FieldError fe) {
+                        field = normalizeFieldName(fe.getField());
+                        message = fe.getDefaultMessage() != null ? fe.getDefaultMessage() : message;
+                    } else if (error instanceof ObjectError oe) {
+                        field = oe.getObjectName();
+                        message = oe.getDefaultMessage() != null ? oe.getDefaultMessage() : message;
+                    }
+
+                    errors.putIfAbsent(field, message);
+                })
+        );
+
+        ex.printStackTrace();
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now().toString())
+                .status(ErrorCode.INVALID_INPUT.getCode())
+                .path(request.getRequestURI())
+                .error("Dữ liệu đầu vào không hợp lệ")
+                .errors(errors.isEmpty() ? null : errors)
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
+    }
 
     // Bắt AppException (lỗi nghiệp vụ)
     @ExceptionHandler(AppException.class)

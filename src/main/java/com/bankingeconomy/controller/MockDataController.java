@@ -1,69 +1,117 @@
 package com.bankingeconomy.controller;
 
+import com.bankingeconomy.dto.event.TransferEvent;
 import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/mock")
 @RequiredArgsConstructor
+@EnableScheduling
 public class MockDataController {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @PostMapping("/generate-transactions")
-    public String generateTransactions() {
+    private boolean isSimulating = false;
+
+    @PostMapping("/start")
+    public String startSimulation() {
+        isSimulating = true;
+        return "✅ Đã BẬT giả lập: Mỗi phút sẽ tự động sinh ~100 giao dịch bắn vào Kafka!";
+    }
+
+    @PostMapping("/stop")
+    public String stopSimulation() {
+        isSimulating = false;
+        return "🛑 Đã TẮT giả lập sinh giao dịch.";
+    }
+
+    @Scheduled(fixedRate = 60000)
+    public void generateTransactionsPerMinute() {
+        if (!isSimulating) return;
+
         try {
-            // Lấy 2 tài khoản làm "diễn viên" để chuyển tiền qua lại
-            // Chú ý: Bạn nhớ phải viết thêm hàm findByAccountNumber trong AccountRepository nhé
-            Account acc1 = accountRepository.findByAccountNumber("ACC001")
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản ACC001"));
-            Account acc2 = accountRepository.findByAccountNumber("ACC002")
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản ACC002"));
+            // Lấy 2 tài khoản ngẫu nhiên từ DB (SQL Server dùng NEWID())
+            List<Account> randomAccounts = accountRepository.findTwoRandomAccounts();
 
-            List<Transaction> transactions = new ArrayList<>();
-
-            // Chạy vòng lặp sinh 10.000 giao dịch
-            for (int i = 1; i <= 10000; i++) {
-                Transaction tx = new Transaction();
-
-                // Random chiều chuyển tiền
-                if (i % 2 == 0) {
-                    tx.setFromAccount(acc1);
-                    tx.setToAccount(acc2);
-                } else {
-                    tx.setFromAccount(acc2);
-                    tx.setToAccount(acc1);
-                }
-
-                // Random số tiền từ 10k đến 5 triệu
-                tx.setAmount(Math.round(Math.random() * 5000000 + 10000));
-                tx.setDescription("Mock transaction chuyển khoản lần " + i);
-                tx.setStatus("SUCCESS");
-
-                // Random ngày giờ tạo (giả lập data của 30 ngày qua)
-                tx.setCreatedAt(LocalDateTime.now().minusDays((int) (Math.random() * 30)));
-
-                transactions.add(tx);
+            if (randomAccounts.size() < 2) {
+                log.error("❌ Không đủ tài khoản trong DB để giả lập (cần ít nhất 2).");
+                return;
             }
 
-            // Lưu 1 cục 10.000 dòng xuống DB
-            transactionRepository.saveAll(transactions);
-            return "✅ Đã tạo thành công 10,000 giao dịch giả!";
+            Account acc1 = randomAccounts.get(0);
+            Account acc2 = randomAccounts.get(1);
+
+            int txCount = ThreadLocalRandom.current().nextInt(80, 121);
+
+            for (int i = 0; i < txCount; i++) {
+                boolean direction = i % 2 == 0;
+                Account fromAcc = direction ? acc1 : acc2;
+                Account toAcc   = direction ? acc2 : acc1;
+
+                long amount = ThreadLocalRandom.current().nextLong(10_000, 5_000_000);
+
+                Transaction pendingTx = new Transaction();
+                pendingTx.setFromAccount(fromAcc);
+                pendingTx.setToAccount(toAcc);
+                pendingTx.setAmount((double) amount);
+                pendingTx.setDescription("Mock Auto - " + LocalDateTime.now());
+                pendingTx.setStatus("PENDING");
+                pendingTx.setCreatedAt(LocalDateTime.now());
+
+                Transaction savedTx = transactionRepository.save(pendingTx);
+
+                TransferEvent event = TransferEvent.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .transactionId(savedTx.getId().toString())
+                        .fromAccountId(fromAcc.getId().toString())
+                        .fromAccountNumber(fromAcc.getAccountNumber())
+                        .senderUserId(fromAcc.getUser() != null
+                                ? fromAcc.getUser().getId().toString()
+                                : UUID.randomUUID().toString())
+                        .toAccountId(toAcc.getId().toString())
+                        .toAccountNumber(toAcc.getAccountNumber())
+                        .receiverUserId(toAcc.getUser() != null
+                                ? toAcc.getUser().getId().toString()
+                                : UUID.randomUUID().toString())
+                        .amount(BigDecimal.valueOf(amount))
+                        .description(pendingTx.getDescription())
+                        .status(TransferEvent.TransferStatus.PENDING)
+                        .timestamp(Instant.now())
+                        .fromProvince(fromAcc.getUser().getProvince())
+                        .fromDistrict(fromAcc.getUser().getDistrict())
+                        .toProvince(toAcc.getUser().getProvince())
+                        .toDistrict(toAcc.getUser().getDistrict())
+                        .build();
+
+                kafkaTemplate.send("transfer-topic", savedTx.getId().toString(), event);
+            }
+
+            log.info("🚀 [MOCK] Đã sinh và bắn {} giao dịch vào Kafka (acc: {} → {}).",
+                    txCount, acc1.getAccountNumber(), acc2.getAccountNumber());
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return "❌ Lỗi khi sinh dữ liệu: " + e.getMessage();
+            log.error("❌ Lỗi khi sinh dữ liệu tự động: ", e);
         }
     }
 }

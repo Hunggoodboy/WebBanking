@@ -30,11 +30,15 @@ public class TransferEvent {
     private String fromAccountId;
     private String fromAccountNumber;
     private String senderUserId;
+    private String fromProvince; // THÊM MỚI
+    private String fromDistrict; // THÊM MỚI
 
     // Thông tin tài khoản đích
     private String toAccountId;
     private String toAccountNumber;
     private String receiverUserId;
+    private String toProvince;   // THÊM MỚI
+    private String toDistrict;   // THÊM MỚI
 
     // Chi tiết giao dịch
     private BigDecimal amount;

@@ -82,13 +82,13 @@ public class HDFSReadWriteServiceImpl implements HDFSReadWriteService {
             String partitionPath = entry.getKey();
             List<String> lines = entry.getValue();
 
-            Path filePath = new Path(partitionPath + "part-00001.csv");
+            Path filePath = new Path(partitionPath + generateBatchName());
             // Tạo thư mục partition nếu chưa có
             fileSystem.mkdirs(filePath.getParent());
 
-            try (FSDataOutputStream out = fileSystem.create(filePath, true)) {
+            try (FSDataOutputStream out = fileSystem.create(filePath, false)) {
                 for (String line : lines) {
-                    out.write(line.getBytes(StandardCharsets.UTF_8));
+                    out.write((line + "\n").getBytes(StandardCharsets.UTF_8));
                 }
             }
 
@@ -100,7 +100,13 @@ public class HDFSReadWriteServiceImpl implements HDFSReadWriteService {
                 totalLines, partitionData.size());
     }
 
-
+    private String generateBatchName(){
+        LocalDateTime now = LocalDateTime.now();
+        // Định dạng ten file là năm-tháng-ngày-giờ-phút để đảm bảo duy nhất
+        String uniqueSuffix = java.util.UUID.randomUUID().toString().substring(0, 6);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+        return "/batch_" + now.format(formatter) +"_" + uniqueSuffix + ".csv";
+    }
 
 
 
@@ -247,6 +253,24 @@ public class HDFSReadWriteServiceImpl implements HDFSReadWriteService {
         }
 
         return partitions;
+    }
+
+    public void clearAllTransactionData() {
+        try {
+            String basePath = "/data/transactions";
+            Path targetPath = new Path(basePath);
+
+            // Lúc này fileSystem đã có sẵn trong class nên sẽ không bị đỏ nữa
+            boolean isDeleted = fileSystem.delete(targetPath, true);
+
+            if (isDeleted) {
+                log.info("✅ Đã XÓA SẠCH toàn bộ dữ liệu HDFS tại đường dẫn: {}", basePath);
+            } else {
+                log.warn("⚠️ Thư mục {} không tồn tại hoặc không thể xóa.", basePath);
+            }
+        } catch (Exception e) {
+            log.error("❌ Lỗi nghiêm trọng khi xóa dữ liệu HDFS: ", e);
+        }
     }
 
     // ================================================================
