@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class PageController {
+
     @GetMapping("/login")
     public String login() {
         return "Login";
@@ -19,6 +20,7 @@ public class PageController {
     public String historyTransfer() {
         return "historyTransfer";
     }
+
     @GetMapping({"/", "/dashboard"})
     public String home() {
         return "Dashboard";
@@ -27,6 +29,11 @@ public class PageController {
     @GetMapping("/admin/dashboard")
     public String adminDashboard() {
         return "AdminDashboard";
+    }
+
+    @GetMapping("/admin/quarterly-growth")
+    public String quarterlyGrowth() {
+        return "QuarterlyGrowth";
     }
 
     @GetMapping("/transfer")
@@ -40,8 +47,12 @@ public class PageController {
     }
 
     @GetMapping("/statistics")
-    public String statistics() {return "Statistics";}
+    public String statistics() {
+        return "Statistics";
+    }
 
     @GetMapping("/beneficiaries")
-    public String beneficiaries() {return "Beneficiaries";}
+    public String beneficiaries() {
+        return "Beneficiaries";
+    }
 }
