@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
@@ -28,56 +29,69 @@ import java.util.concurrent.ThreadLocalRandom;
 @EnableScheduling
 public class MockDataController {
 
+    private static final long MIN_TRANSFER_AMOUNT = 10_000L;
+    private static final long MAX_TRANSFER_AMOUNT = 1_000_000L;
+
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    private boolean isSimulating = false;
+    private volatile boolean isSimulating = false;
 
     @PostMapping("/start")
     public String startSimulation() {
         isSimulating = true;
-        return "✅ Đã BẬT giả lập: Mỗi phút sẽ tự động sinh ~100 giao dịch bắn vào Kafka!";
+        return "Da bat gia lap. Moi phut he thong se tao xap xi 100 giao dich.";
     }
 
     @PostMapping("/stop")
     public String stopSimulation() {
         isSimulating = false;
-        return "🛑 Đã TẮT giả lập sinh giao dịch.";
+        return "Da tat gia lap sinh giao dich.";
+    }
+
+    @PostMapping("/run-once")
+    public String runOnce(@RequestParam(defaultValue = "100") int count) {
+        int generated = generateTransactions(Math.max(1, count));
+        return "Da tao " + generated + " giao dich mock ngay lap tuc.";
     }
 
     @Scheduled(fixedRate = 60000)
     public void generateTransactionsPerMinute() {
-        if (!isSimulating) return;
+        if (!isSimulating) {
+            return;
+        }
 
+        int txCount = ThreadLocalRandom.current().nextInt(80, 121);
+        generateTransactions(txCount);
+    }
+
+    private int generateTransactions(int txCount) {
         try {
-            // Lấy 2 tài khoản ngẫu nhiên từ DB (SQL Server dùng NEWID())
-            List<Account> randomAccounts = accountRepository.findTwoRandomAccounts();
+            List<Account> eligibleAccounts = accountRepository.findAll().stream()
+                    .filter(account -> account.getStatus() == Account.AccountStatus.ACTIVE)
+                    .filter(account -> account.getUser() != null)
+                    .toList();
 
-            if (randomAccounts.size() < 2) {
-                log.error("❌ Không đủ tài khoản trong DB để giả lập (cần ít nhất 2).");
-                return;
+            if (eligibleAccounts.size() < 2) {
+                log.error("Khong du tai khoan de sinh du lieu mock. Can it nhat 2 account ACTIVE.");
+                return 0;
             }
 
-            Account acc1 = randomAccounts.get(0);
-            Account acc2 = randomAccounts.get(1);
-
-            int txCount = ThreadLocalRandom.current().nextInt(80, 121);
-
             for (int i = 0; i < txCount; i++) {
-                boolean direction = i % 2 == 0;
-                Account fromAcc = direction ? acc1 : acc2;
-                Account toAcc   = direction ? acc2 : acc1;
+                Account fromAcc = pickRandomAccount(eligibleAccounts, null);
+                Account toAcc = pickRandomAccount(eligibleAccounts, fromAcc.getId());
 
-                long amount = ThreadLocalRandom.current().nextLong(10_000, 5_000_000);
+                long amount = ThreadLocalRandom.current().nextLong(MIN_TRANSFER_AMOUNT, MAX_TRANSFER_AMOUNT + 1);
+                LocalDateTime createdAt = LocalDateTime.now();
 
                 Transaction pendingTx = new Transaction();
                 pendingTx.setFromAccount(fromAcc);
                 pendingTx.setToAccount(toAcc);
                 pendingTx.setAmount((double) amount);
-                pendingTx.setDescription("Mock Auto - " + LocalDateTime.now());
+                pendingTx.setDescription("Mock Auto - " + createdAt);
                 pendingTx.setStatus("PENDING");
-                pendingTx.setCreatedAt(LocalDateTime.now());
+                pendingTx.setCreatedAt(createdAt);
 
                 Transaction savedTx = transactionRepository.save(pendingTx);
 
@@ -86,18 +100,14 @@ public class MockDataController {
                         .transactionId(savedTx.getId().toString())
                         .fromAccountId(fromAcc.getId().toString())
                         .fromAccountNumber(fromAcc.getAccountNumber())
-                        .senderUserId(fromAcc.getUser() != null
-                                ? fromAcc.getUser().getId().toString()
-                                : UUID.randomUUID().toString())
+                        .senderUserId(fromAcc.getUser().getId().toString())
                         .toAccountId(toAcc.getId().toString())
                         .toAccountNumber(toAcc.getAccountNumber())
-                        .receiverUserId(toAcc.getUser() != null
-                                ? toAcc.getUser().getId().toString()
-                                : UUID.randomUUID().toString())
+                        .receiverUserId(toAcc.getUser().getId().toString())
                         .amount(BigDecimal.valueOf(amount))
                         .description(pendingTx.getDescription())
                         .status(TransferEvent.TransferStatus.PENDING)
-                        .timestamp(Instant.now())
+                        .timestamp(createdAt.atZone(java.time.ZoneId.systemDefault()).toInstant())
                         .fromProvince(fromAcc.getUser().getProvince())
                         .fromDistrict(fromAcc.getUser().getDistrict())
                         .toProvince(toAcc.getUser().getProvince())
@@ -107,11 +117,19 @@ public class MockDataController {
                 kafkaTemplate.send("transfer-topic", savedTx.getId().toString(), event);
             }
 
-            log.info("🚀 [MOCK] Đã sinh và bắn {} giao dịch vào Kafka (acc: {} → {}).",
-                    txCount, acc1.getAccountNumber(), acc2.getAccountNumber());
-
+            log.info("Da sinh va ban {} giao dich mock vao Kafka.", txCount);
+            return txCount;
         } catch (Exception e) {
-            log.error("❌ Lỗi khi sinh dữ liệu tự động: ", e);
+            log.error("Loi khi sinh du lieu mock", e);
+            return 0;
         }
+    }
+
+    private Account pickRandomAccount(List<Account> accounts, UUID excludedAccountId) {
+        Account candidate;
+        do {
+            candidate = accounts.get(ThreadLocalRandom.current().nextInt(accounts.size()));
+        } while (excludedAccountId != null && excludedAccountId.equals(candidate.getId()));
+        return candidate;
     }
 }

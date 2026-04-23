@@ -3,7 +3,6 @@ package com.bankingeconomy.service.Impl;
 import com.bankingeconomy.dto.event.TransferEvent;
 import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.Transaction;
-
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
@@ -29,39 +28,36 @@ public class TransactionProcessorService {
 
     @Transactional
     public void processTransaction(TransferEvent event) {
-        // 1. Chuyển đổi ID từ Event
         UUID txId = UUID.fromString(event.getTransactionId());
-        log.info("Bắt đầu xử lý giao dịch: txId={} eventId={}", txId, event.getEventId());
+        log.info("Bat dau xu ly giao dich: txId={} eventId={}", txId, event.getEventId());
 
-        // 2. Kiểm tra Idempotency (Chống xử lý trùng lặp)
         Transaction tx = transactionRepository.findById(txId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch trong DB: " + txId));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay giao dich trong DB: " + txId));
 
         if (!"PENDING".equals(tx.getStatus())) {
-            log.warn("Giao dịch txId={} đã được xử lý trước đó (status={}). Bỏ qua.", txId, tx.getStatus());
+            log.warn("Giao dich txId={} da duoc xu ly truoc do (status={}). Bo qua.", txId, tx.getStatus());
             return;
         }
 
-        // 3. Cập nhật trạng thái đang xử lý
         transactionRepository.updateStatus(txId, "PROCESSING");
         event.setStatus(TransferEvent.TransferStatus.PROCESSING);
 
+        boolean debitCompleted = false;
         try {
-            // 4. Thực hiện trừ tiền và cộng tiền
             handleDebit(tx);
+            debitCompleted = true;
             handleCredit(tx);
 
-            // 5. Cập nhật thành công cho cả DB và Kafka Event
             transactionRepository.updateStatus(txId, "SUCCESS");
             event.setStatus(TransferEvent.TransferStatus.COMPLETED);
-
-            log.info("Giao dịch hoàn tất thành công: txId={}", txId);
-
+            log.info("Giao dich hoan tat thanh cong: txId={}", txId);
         } catch (Exception e) {
-            log.error("Xử lý giao dịch thất bại: txId={} | Lỗi: {}", txId, e.getMessage());
+            log.error("Xu ly giao dich that bai: txId={} | Loi: {}", txId, e.getMessage());
 
-            // 6. Rollback nghiệp vụ & cập nhật trạng thái lỗi
-            handleRollback(tx);
+            if (debitCompleted) {
+                handleRollback(tx);
+            }
+
             transactionRepository.updateStatus(txId, "FAILED");
             event.setStatus(TransferEvent.TransferStatus.FAILED);
         }
@@ -75,32 +71,26 @@ public class TransactionProcessorService {
             throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
         }
 
-        // Trừ tiền DB
         from.setBalance(from.getBalance() - tx.getAmount());
         accountRepository.save(from);
-
-        // Xóa Cache Redis để lần sau khách xem số dư sẽ lấy số mới từ DB
         balanceCacheService.evictBalance(from.getId());
 
-        log.info("Đã trừ tiền: account={} | balance mới={}", from.getAccountNumber(), from.getBalance());
+        log.info("Da tru tien: account={} | balance moi={}", from.getAccountNumber(), from.getBalance());
     }
 
     private void handleCredit(Transaction tx) {
         Account to = accountRepository.findById(tx.getToAccount().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        // Cộng tiền DB
         to.setBalance(to.getBalance() + tx.getAmount());
         accountRepository.save(to);
-
-        // Cập nhật Cache Redis cho người nhận
         balanceCacheService.evictBalance(to.getId());
 
-        log.info("Đã cộng tiền: account={} | balance mới={}", to.getAccountNumber(), to.getBalance());
+        log.info("Da cong tien: account={} | balance moi={}", to.getAccountNumber(), to.getBalance());
     }
 
     private void handleRollback(Transaction tx) {
-        log.warn("Đang thực hiện hoàn tiền cho giao dịch lỗi txId={}", tx.getId());
+        log.warn("Dang thuc hien hoan tien cho giao dich loi txId={}", tx.getId());
         try {
             Account from = accountRepository.findById(tx.getFromAccount().getId()).orElse(null);
             if (from != null) {
@@ -109,7 +99,7 @@ public class TransactionProcessorService {
                 balanceCacheService.evictBalance(from.getId());
             }
         } catch (Exception e) {
-            log.error("LỖI NGHIÊM TRỌNG: Không thể hoàn tiền cho txId={}", tx.getId());
+            log.error("Loi nghiem trong: khong the hoan tien cho txId={}", tx.getId(), e);
         }
     }
 }
