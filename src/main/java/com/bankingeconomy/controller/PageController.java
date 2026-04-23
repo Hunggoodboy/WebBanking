@@ -28,6 +28,10 @@ public class PageController {
     public String adminDashboard() {
         return "AdminDashboard";
     }
+    @GetMapping("/admin/district-risk")
+    public String districtRisk() {
+        return "district-risk";
+    }
 
     @GetMapping("/transfer")
     public String transfer() {

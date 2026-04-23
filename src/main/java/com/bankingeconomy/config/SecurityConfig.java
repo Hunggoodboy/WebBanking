@@ -47,6 +47,7 @@ public class SecurityConfig {
             "/register",
             "/dashboard",
             "/admin/dashboard",
+            "/admin/district-risk",
             "/transfer",
             "/profile",
             "/api/test-kafka/**",
