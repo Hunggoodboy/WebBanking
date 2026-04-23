@@ -17,5 +17,6 @@ public class TransactionStatisticsResponse {
     private TransactionStatisticsSummaryResponse summary;
     private List<StatisticPointResponse> points;
     private List<StatisticBreakdownResponse> statusBreakdown;
+    private List<TopRecipientResponse> topRecipients;
     private List<AccountTransferPointResponse> mapReduceTopAccounts;
 }

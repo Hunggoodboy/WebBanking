@@ -3,6 +3,7 @@ package com.bankingeconomy.service.Impl;
 import com.bankingeconomy.dto.response.AccountTransferPointResponse;
 import com.bankingeconomy.dto.response.StatisticBreakdownResponse;
 import com.bankingeconomy.dto.response.StatisticPointResponse;
+import com.bankingeconomy.dto.response.TopRecipientResponse;
 import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
 import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
 import com.bankingeconomy.dto.response.TransactionStatisticsSummaryResponse;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -175,8 +177,62 @@ public class ReportServiceImpl implements ReportService {
                 .summary(summary)
                 .points(points)
                 .statusBreakdown(statusBreakdown)
+                .topRecipients(currentUserId != null ? buildTopRecipients(transactions, currentUserId) : List.of())
                 .mapReduceTopAccounts(List.of())
                 .build();
+    }
+
+    private List<TopRecipientResponse> buildTopRecipients(List<Transaction> transactions, UUID currentUserId) {
+        Map<String, MutableTopRecipient> recipientMap = new LinkedHashMap<>();
+
+        for (Transaction transaction : transactions) {
+            if (!"SUCCESS".equals(normalizeStatus(transaction.getStatus()))) {
+                continue;
+            }
+
+            if (!belongsToUser(transaction.getFromAccount(), currentUserId)) {
+                continue;
+            }
+
+            Account toAccount = transaction.getToAccount();
+            if (toAccount == null) {
+                continue;
+            }
+
+            String accountNumber = toAccount.getAccountNumber() != null ? toAccount.getAccountNumber().trim() : "";
+            if (accountNumber.isEmpty()) {
+                continue;
+            }
+
+            String recipientName = resolveRecipientName(toAccount);
+            MutableTopRecipient recipient = recipientMap.computeIfAbsent(accountNumber,
+                    key -> new MutableTopRecipient(recipientName, accountNumber));
+            recipient.transferCount += 1;
+            recipient.totalAmount += transaction.getAmount();
+        }
+
+        return recipientMap.values().stream()
+                .sorted(Comparator
+                        .comparingLong(MutableTopRecipient::getTransferCount).reversed()
+                        .thenComparing(MutableTopRecipient::getTotalAmount, Comparator.reverseOrder())
+                        .thenComparing(MutableTopRecipient::getFullName, String.CASE_INSENSITIVE_ORDER))
+                .limit(5)
+                .map(item -> TopRecipientResponse.builder()
+                        .fullName(item.fullName)
+                        .accountNumber(item.accountNumber)
+                        .transferCount(item.transferCount)
+                        .totalAmount(item.totalAmount)
+                        .build())
+                .toList();
+    }
+
+    private String resolveRecipientName(Account account) {
+        if (account == null || account.getUser() == null) {
+            return "Không rõ người nhận";
+        }
+
+        String fullName = Objects.requireNonNullElse(account.getUser().getFullName(), "").trim();
+        return fullName.isEmpty() ? "Không rõ người nhận" : fullName;
     }
 
     private List<AccountTransferPointResponse> readMapReduceTopAccounts(LocalDateTime start, LocalDateTime end) {
@@ -313,6 +369,30 @@ public class ReportServiceImpl implements ReportService {
 
         private MutableStatisticPoint(String label) {
             this.label = label;
+        }
+    }
+
+    private static class MutableTopRecipient {
+        private final String fullName;
+        private final String accountNumber;
+        private long transferCount;
+        private double totalAmount;
+
+        private MutableTopRecipient(String fullName, String accountNumber) {
+            this.fullName = fullName;
+            this.accountNumber = accountNumber;
+        }
+
+        private long getTransferCount() {
+            return transferCount;
+        }
+
+        private Double getTotalAmount() {
+            return totalAmount;
+        }
+
+        private String getFullName() {
+            return fullName;
         }
     }
 }
