@@ -1,5 +1,6 @@
 package com.bankingeconomy.service.Impl;
 
+import com.bankingeconomy.dto.response.TopCustomerResponse;
 import com.bankingeconomy.dto.response.AccountTransferPointResponse;
 import com.bankingeconomy.dto.response.StatisticBreakdownResponse;
 import com.bankingeconomy.dto.response.StatisticPointResponse;
@@ -302,6 +303,27 @@ public class ReportServiceImpl implements ReportService {
                 .status(transaction.getStatus())
                 .createdAt(transaction.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    public List<TopCustomerResponse> getTop5PercentVipCustomers(int year) {
+        LocalDateTime startDate = LocalDateTime.of(year, 1, 1, 0, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(year + 1, 1, 1, 0, 0, 0);
+
+        List<Object[]> rows = reportRepository.findTop5PercentCustomersByYear(startDate, endDate);
+
+        return rows.stream()
+                .map(row -> TopCustomerResponse.builder()
+                        .userId(row[0] != null ? row[0].toString() : null)
+                        .fullName(row[1] != null ? row[1].toString() : null)
+                        .email(row[2] != null ? row[2].toString() : null)
+                        .phone(row[3] != null ? row[3].toString() : null)
+                        .accountNumber(row[4] != null ? row[4].toString() : null)
+                        .totalTransferAmount(row[5] != null ? ((Number) row[5]).doubleValue() : 0)
+                        .totalTransactions(row[6] != null ? ((Number) row[6]).longValue() : 0)
+                        .percentileRank(row[7] != null ? ((Number) row[7]).doubleValue() : 0)
+                        .build())
+                .toList();
     }
 
     private static class MutableStatisticPoint {
