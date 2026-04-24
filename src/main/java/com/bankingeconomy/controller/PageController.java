@@ -41,4 +41,9 @@ public class PageController {
 
     @GetMapping("/statistics")
     public String statistics() {return "Statistics";}
+
+    @GetMapping("/admin/max-province-flow")
+    public String maxProvinceFlow() {
+        return "max-province-flow";
+    }
 }

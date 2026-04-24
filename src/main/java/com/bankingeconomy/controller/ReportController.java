@@ -1,9 +1,11 @@
 package com.bankingeconomy.controller;
 
+import com.bankingeconomy.dto.response.ProvinceFlowAmountDTO;
 import com.bankingeconomy.dto.response.ResponseData;
 import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
 import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
 import com.bankingeconomy.entity.User;
+import com.bankingeconomy.service.Impl.TransactionProvinceFlowService;
 import com.bankingeconomy.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,8 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,6 +31,8 @@ import java.util.Map;
 public class ReportController {
 
     private final ReportService reportService;
+
+    private TransactionProvinceFlowService flowService;
 
     @GetMapping("/my-transactions")
     public ResponseData<Map<String, Object>> myTransactions(
@@ -80,5 +86,14 @@ public class ReportController {
     @GetMapping("/my-balance")
     public ResponseData<Map<String, Object>> myBalance(@AuthenticationPrincipal User currentUser) {
         return new ResponseData<>(200, "Lấy số dư thành công", Map.of("balance", reportService.getMyBalance(currentUser)));
+    }
+
+    @GetMapping("/admin/max-province-flow")
+    public ResponseData<List<ProvinceFlowAmountDTO>> maxProvinceFlow(@RequestParam(defaultValue = "5") int amount, @AuthenticationPrincipal User user) throws IOException, InterruptedException, ClassNotFoundException {
+        List<ProvinceFlowAmountDTO> data = List.of();
+        if (user.getRole().equals(User.Role.ADMIN)) {
+            data = flowService.getTopProvinceFlowAmount(amount);
+        }
+        return new ResponseData<>(200, "Thanh cong", data);
     }
 }
