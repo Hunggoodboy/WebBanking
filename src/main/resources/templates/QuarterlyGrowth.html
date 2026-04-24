@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EBank - Tăng trưởng theo Quý</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 font-sans text-gray-800">
+    <div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
+
+        <!-- HEADER -->
+        <header class="mb-8">
+            <div
+                class="bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl rounded-3xl px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white flex items-center justify-center text-xl font-bold shadow-lg">
+                        E
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">EBank</h1>
+                        <p class="text-sm text-gray-500">Bảng điều khiển tài chính cá nhân</p>
+                    </div>
+                </div>
+                <nav class="flex flex-wrap items-center gap-3 text-sm font-medium">
+                    <a href="/dashboard"
+                        class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Tổng quan</a>
+                    <a href="/transfer"
+                        class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Chuyển
+                        khoản</a>
+                    <a href="/admin/dashboard" class="px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-md">Dashboard
+                        Admin</a>
+                    <a href="/profile"
+                        class="px-4 py-2 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">Hồ sơ</a>
+                </nav>
+                <div
+                    class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-white flex items-center justify-center font-bold">
+                        <span id="userInitials">AD</span>
+                    </div>
+                    <div class="text-sm">
+                        <p class="font-semibold" id="userName">Admin</p>
+                        <p class="text-gray-400 text-xs">Quản trị viên hệ thống</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="flex flex-col lg:flex-row gap-6">
+
+            <!-- SIDEBAR -->
+            <div class="lg:w-1/4">
+                <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-5 sticky top-6">
+                    <p class="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-3 px-2">Dành cho Admin
+                    </p>
+                    <h3 class="text-lg font-bold mb-4 px-2 text-slate-800">Phân hệ thống kê</h3>
+                    <ul class="space-y-2 font-medium">
+                        <li>
+                            <a href="/admin/dashboard"
+                                class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
+                                <span class="text-xl">🏠</span> Dashboard Admin
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin/quarterly-growth"
+                                class="w-full text-left px-4 py-3 rounded-2xl bg-indigo-50 text-indigo-700 transition flex items-center gap-3">
+                                <span class="text-xl">📈</span> Tăng trưởng theo Quý
+                            </a>
+                        </li>
+                        <!-- Các thành viên khác thêm vào đây -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT -->
+            <div class="lg:w-3/4 space-y-6">
+
+                <!-- CONTROL PANEL -->
+                <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800">📈 Tăng trưởng theo Quý</h2>
+                            <p class="text-sm text-gray-500 mt-1">So sánh Q1 vs Q2 — đánh giá tốc độ phát triển ngân
+                                hàng</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <select id="yearSelect"
+                                class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                            </select>
+                            <button onclick="runJob()" id="btnRun"
+                                class="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold shadow hover:bg-indigo-700 transition">
+                                ▶ Chạy Job
+                            </button>
+                            <button onclick="loadResult()" id="btnLoad"
+                                class="px-5 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold shadow hover:bg-emerald-600 transition">
+                                🔄 Tải kết quả
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status message -->
+                    <div id="statusMsg" class="hidden mt-4 px-4 py-3 rounded-xl text-sm font-medium"></div>
+                </div>
+
+                <!-- SUMMARY CARDS -->
+                <div id="summaryCards" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-2xl shadow-lg p-5">
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Tổng GD Q1</p>
+                        <p class="text-2xl font-bold text-indigo-600" id="cardTxQ1">—</p>
+                    </div>
+                    <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-2xl shadow-lg p-5">
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Tổng GD Q2</p>
+                        <p class="text-2xl font-bold text-cyan-600" id="cardTxQ2">—</p>
+                    </div>
+                    <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-2xl shadow-lg p-5">
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Tăng trưởng GD</p>
+                        <p class="text-2xl font-bold" id="cardGrowthCount">—</p>
+                    </div>
+                    <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-2xl shadow-lg p-5">
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Tăng trưởng Doanh
+                            thu</p>
+                        <p class="text-2xl font-bold" id="cardGrowthAmount">—</p>
+                    </div>
+                </div>
+
+                <!-- CHARTS -->
+                <div id="chartsSection" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Chart: Số giao dịch -->
+                    <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+                        <h3 class="text-base font-bold text-slate-700 mb-4">📊 Số lượng giao dịch</h3>
+                        <canvas id="chartTxCount" height="220"></canvas>
+                    </div>
+                    <!-- Chart: Doanh thu -->
+                    <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+                        <h3 class="text-base font-bold text-slate-700 mb-4">💰 Tổng doanh thu (VNĐ)</h3>
+                        <canvas id="chartAmount" height="220"></canvas>
+                    </div>
+                    <!-- Chart: Tỷ lệ thành công -->
+                    <div
+                        class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6 lg:col-span-2">
+                        <h3 class="text-base font-bold text-slate-700 mb-4">✅ Tỷ lệ thành công (%)</h3>
+                        <canvas id="chartSuccessRate" height="120"></canvas>
+                    </div>
+                </div>
+
+                <!-- DETAIL TABLE -->
+                <div id="detailTable"
+                    class="hidden bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+                    <h3 class="text-base font-bold text-slate-700 mb-4">📋 Chi tiết theo Quý</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-xs text-gray-400 uppercase border-b border-slate-100">
+                                    <th class="pb-3 pr-6">Quý</th>
+                                    <th class="pb-3 pr-6">Số GD</th>
+                                    <th class="pb-3 pr-6">Thành công</th>
+                                    <th class="pb-3 pr-6">Thất bại</th>
+                                    <th class="pb-3 pr-6">Tỷ lệ TT</th>
+                                    <th class="pb-3">Doanh thu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const TOKEN_KEY = 'accessToken';
+        let chartTxCount = null, chartAmount = null, chartSuccessRate = null;
+
+        function getToken() {
+            return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
+        }
+
+        function getYear() {
+            return document.getElementById('yearSelect').value;
+        }
+
+        function showStatus(msg, type = 'info') {
+            const el = document.getElementById('statusMsg');
+            el.className = `mt-4 px-4 py-3 rounded-xl text-sm font-medium ${type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+                        'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                }`;
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function formatGrowth(percent) {
+            const sign = percent >= 0 ? '+' : '';
+            return `${sign}${percent}%`;
+        }
+
+        // Chạy MapReduce Job
+        async function runJob() {
+            const btn = document.getElementById('btnRun');
+            btn.disabled = true;
+            btn.textContent = '⏳ Đang chạy...';
+            showStatus('Đang chạy MapReduce Job, vui lòng chờ...', 'info');
+
+            try {
+                const res = await fetch(`/api/admin/quarterly-growth/run?year=${getYear()}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const text = await res.text();
+                showStatus(text, res.ok ? 'success' : 'error');
+            } catch (e) {
+                showStatus('Lỗi kết nối server: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '▶ Chạy Job';
+            }
+        }
+
+        // Tải kết quả từ HDFS và render
+        async function loadResult() {
+            showStatus('Đang tải kết quả...', 'info');
+            try {
+                const res = await fetch(`/api/admin/quarterly-growth/result?year=${getYear()}`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    showStatus('⚠️ ' + data.error, 'error');
+                    return;
+                }
+
+                renderCards(data);
+                renderCharts(data);
+                renderTable(data);
+                showStatus('Tải dữ liệu thành công!', 'success');
+            } catch (e) {
+                showStatus('Lỗi kết nối server: ' + e.message, 'error');
+            }
+        }
+
+        function renderCards(data) {
+            const q1 = data.quarters?.Q1;
+            const q2 = data.quarters?.Q2;
+
+            document.getElementById('cardTxQ1').textContent = q1 ? q1.txCount.toLocaleString('vi-VN') : '—';
+            document.getElementById('cardTxQ2').textContent = q2 ? q2.txCount.toLocaleString('vi-VN') : '—';
+
+            const gc = document.getElementById('cardGrowthCount');
+            gc.textContent = data.growthCountPercent !== undefined ? formatGrowth(data.growthCountPercent) : '—';
+            gc.className = `text-2xl font-bold ${data.growthCountPercent >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+
+            const ga = document.getElementById('cardGrowthAmount');
+            ga.textContent = data.growthAmountPercent !== undefined ? formatGrowth(data.growthAmountPercent) : '—';
+            ga.className = `text-2xl font-bold ${data.growthAmountPercent >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+
+            document.getElementById('summaryCards').classList.remove('hidden');
+        }
+
+        function renderCharts(data) {
+            const q1 = data.quarters?.Q1 || {};
+            const q2 = data.quarters?.Q2 || {};
+            const labels = ['Q1', 'Q2'];
+
+            // Destroy old charts
+            if (chartTxCount) chartTxCount.destroy();
+            if (chartAmount) chartAmount.destroy();
+            if (chartSuccessRate) chartSuccessRate.destroy();
+
+            // Chart: Số giao dịch
+            chartTxCount = new Chart(document.getElementById('chartTxCount'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Số giao dịch',
+                        data: [q1.txCount || 0, q2.txCount || 0],
+                        backgroundColor: ['rgba(99,102,241,0.7)', 'rgba(6,182,212,0.7)'],
+                        borderRadius: 10
+                    }]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+
+            // Chart: Doanh thu
+            chartAmount = new Chart(document.getElementById('chartAmount'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Doanh thu (VNĐ)',
+                        data: [q1.totalAmount || 0, q2.totalAmount || 0],
+                        backgroundColor: ['rgba(99,102,241,0.7)', 'rgba(16,185,129,0.7)'],
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => (v / 1e6).toFixed(0) + 'M' } } }
+                }
+            });
+
+            // Chart: Tỷ lệ thành công
+            chartSuccessRate = new Chart(document.getElementById('chartSuccessRate'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Tỷ lệ thành công (%)',
+                        data: [q1.successRate || 0, q2.successRate || 0],
+                        backgroundColor: ['rgba(245,158,11,0.7)', 'rgba(16,185,129,0.7)'],
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            document.getElementById('chartsSection').classList.remove('hidden');
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            const quarters = data.quarters || {};
+
+            ['Q1', 'Q2'].forEach(q => {
+                if (!quarters[q]) return;
+                const d = quarters[q];
+                tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="py-3 pr-6 font-bold text-indigo-600">${q}</td>
+                    <td class="py-3 pr-6">${d.txCount.toLocaleString('vi-VN')}</td>
+                    <td class="py-3 pr-6 text-emerald-600">${d.successCount.toLocaleString('vi-VN')}</td>
+                    <td class="py-3 pr-6 text-red-500">${d.failCount.toLocaleString('vi-VN')}</td>
+                    <td class="py-3 pr-6">${d.successRate}%</td>
+                    <td class="py-3 font-semibold">${formatMoney(d.totalAmount)}</td>
+                </tr>`;
+            });
+
+            document.getElementById('detailTable').classList.remove('hidden');
+        }
+    </script>
+</body>
+
+</html>

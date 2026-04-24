@@ -1,8 +1,6 @@
 package com.bankingeconomy.config;
 
 
-import com.bankingeconomy.service.Impl.UserDetailServiceCustomizer;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,13 +10,13 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.List;
+import com.bankingeconomy.service.Impl.UserDetailServiceCustomizer;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -56,7 +54,8 @@ public class SecurityConfig {
             "/api/user/**"
             ,"/",
             "/my-balance"
-            ,"/statistics"
+            ,"/statistics",
+            "/admin/quarterly-growth"
     };
 
     @Bean
