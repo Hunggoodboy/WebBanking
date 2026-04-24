@@ -64,9 +64,7 @@ public class QuarterlyGrowthServiceImpl implements QuarterlyGrowthService {
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(Text.class);
 
-            FileInputFormat.addInputPath(job, new Path(inputPath));
-            FileOutputFormat.setOutputPath(job, outPath);
-
+            FileInputFormat.addInputPath(job, new Path("/data/transactions/*/*/*/*/*.csv"));
             log.info("Bắt đầu chạy MapReduce QuarterlyGrowth cho năm: {}", year);
             boolean success = job.waitForCompletion(true);
 

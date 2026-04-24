@@ -52,10 +52,11 @@ public class SecurityConfig {
             "/profile",
             "/api/test-kafka/**",
             "/api/user/**"
-            ,"/",
-            "/my-balance"
-            ,"/statistics",
-            "/admin/quarterly-growth"
+            ,"/"
+            ,"/my-balance"
+            ,"/statistics"
+            ,"/admin/**"
+            ,"/api/admin/**"
     };
 
     @Bean

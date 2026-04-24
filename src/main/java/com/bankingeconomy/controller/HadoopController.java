@@ -20,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/hadoop")
 @AllArgsConstructor
+@Slf4j
 public class HadoopController {
 
     private final HdfsService             hdfsService;

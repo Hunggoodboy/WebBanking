@@ -28,7 +28,6 @@ public class QuarterlyGrowthController {
      * POST /api/admin/quarterly-growth/run?year=2024
      */
     @PostMapping("/run")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> runJob(@RequestParam(defaultValue = "2024") String year) {
         log.info("Admin yêu cầu chạy QuarterlyGrowth job cho năm: {}", year);
         String message = quarterlyGrowthService.runQuarterlyGrowthJob(year);
@@ -40,7 +39,6 @@ public class QuarterlyGrowthController {
      * GET /api/admin/quarterly-growth/result?year=2024
      */
     @GetMapping("/result")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> getResult(
             @RequestParam(defaultValue = "2024") String year) {
         log.info("Lấy kết quả QuarterlyGrowth cho năm: {}", year);

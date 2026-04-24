@@ -38,8 +38,8 @@ public class HdfsKafkaConsumer {
             String monthStr = tx.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
             // --- Phía OUT (Người gửi) ---
-            String outProv = (normalizeLocationName(tx.getFromProvince()) != null && !tx.getFromProvince().isBlank()) ? tx.getFromProvince() : "UNKNOWN";
-            String outDist = (normalizeLocationName(tx.getFromDistrict()) != null && !tx.getFromDistrict().isBlank()) ? tx.getFromDistrict() : "UNKNOWN";
+            String outProv = normalizeLocationName(tx.getFromProvince());
+            String outDist = normalizeLocationName(tx.getFromDistrict());
 
             String outKey = BASE_PATH + String.format("province=%s/district=%s/year=%d/quarter=Q%d/", outProv, outDist, year, quarter);
             String outCsv = String.format("%s,%s,%s,OUT,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
@@ -50,8 +50,8 @@ public class HdfsKafkaConsumer {
             partitionData.computeIfAbsent(outKey, k -> new ArrayList<>()).add(outCsv);
 
             // --- Phía IN (Người nhận) ---
-            String inProv = (normalizeLocationName(tx.getToProvince()) != null && !tx.getToProvince().isBlank()) ? tx.getToProvince() : "UNKNOWN";
-            String inDist = (normalizeLocationName(tx.getToDistrict()) != null && !tx.getToDistrict().isBlank()) ? tx.getToDistrict() : "UNKNOWN";
+            String inProv = normalizeLocationName(tx.getToProvince());
+            String inDist = normalizeLocationName(tx.getToDistrict());
 
             String inKey = BASE_PATH + String.format("province=%s/district=%s/year=%d/quarter=Q%d/", inProv, inDist, year, quarter);
             String inCsv = String.format("%s,%s,%s,IN,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
