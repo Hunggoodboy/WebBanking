@@ -260,7 +260,7 @@ public class ReportServiceImpl implements ReportService {
 
     private String normalizeGroupBy(String groupBy) {
         String normalized = String.valueOf(groupBy).trim().toLowerCase(Locale.ROOT);
-        if ("month".equals(normalized) || "year".equals(normalized)) {
+        if ("month".equals(normalized) || "quarter".equals(normalized) || "year".equals(normalized)) {
             return normalized;
         }
         return "day";
@@ -277,6 +277,10 @@ public class ReportServiceImpl implements ReportService {
         }
         if ("month".equals(groupBy)) {
             return createdAt.format(MONTH_FORMAT);
+        }
+        if ("quarter".equals(groupBy)) {
+            int quarter = (createdAt.getMonthValue() - 1) / 3 + 1;
+            return "Q" + quarter + "/" + createdAt.getYear();
         }
         if ("year".equals(groupBy)) {
             return createdAt.format(YEAR_FORMAT);
