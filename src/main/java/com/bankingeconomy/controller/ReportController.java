@@ -2,6 +2,7 @@ package com.bankingeconomy.controller;
 
 import com.bankingeconomy.dto.response.AdminTopTransferTimeResponse;
 import com.bankingeconomy.dto.response.ResponseData;
+import com.bankingeconomy.dto.response.TopCustomerResponse;
 import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
 import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
 import com.bankingeconomy.entity.User;
@@ -21,8 +22,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.LinkedHashMap;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -103,5 +105,28 @@ public class ReportController {
         if (!"ADMIN".equals(String.valueOf(currentUser.getRole()).toUpperCase(Locale.ROOT))) {
             throw new AppException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+    }
+    /**
+     * API lọc Top 5% khách hàng "đại gia" — chuyển tiền nhiều nhất trong năm.
+     * Mặc định lấy năm hiện tại nếu không truyền tham số year.
+     *
+     * Tránh N+1 query: Toàn bộ JOIN + aggregation + PERCENT_RANK()
+     * được thực hiện trong 1 native SQL query duy nhất.
+     */
+    @GetMapping("/admin/top-vip-customers")
+    public ResponseData<Map<String, Object>> getTopVipCustomers(
+            @RequestParam(required = false) Integer year) {
+
+        int targetYear = (year != null) ? year : Year.now().getValue();
+        List<TopCustomerResponse> customers = reportService.getTop5PercentVipCustomers(targetYear);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("year", targetYear);
+        data.put("percentile", "top 5%");
+        data.put("totalCustomers", customers.size());
+        data.put("customers", customers);
+
+        return new ResponseData<>(200,
+                "Lấy danh sách Top 5% khách hàng đại gia năm " + targetYear + " thành công", data);
     }
 }
