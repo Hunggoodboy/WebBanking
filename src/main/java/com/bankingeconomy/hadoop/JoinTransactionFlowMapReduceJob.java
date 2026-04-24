@@ -52,7 +52,7 @@ public class JoinTransactionFlowMapReduceJob {
             double amount = 0;
 
             for (Text val : values) {
-                String[] parts = val.toString().split("\\|");
+                String[] parts = val.toString().split("-");
 
                 String direction = parts[1];
                 String province = parts[0];

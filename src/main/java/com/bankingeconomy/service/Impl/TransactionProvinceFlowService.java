@@ -23,6 +23,8 @@ public class TransactionProvinceFlowService {
     private ObjectProvider<FileSystem> fileSystemProvider;
 
     public List<ProvinceFlowAmountDTO> getTopProvinceFlowAmount(int size) throws IOException, InterruptedException, ClassNotFoundException {
+        if (size <= 0) return List.of();
+
         String joinInput = "/data/transactions/province=*/district=*/year=*/quarter=*/";
         Path inputPath = new Path(joinInput);
         String joinOutput = "/data/report/temp/join_transaction/";
@@ -44,8 +46,10 @@ public class TransactionProvinceFlowService {
             return List.of();
         }
 
-        if (JoinTransactionFlowMapReduceJob.run(joinInput, joinOutput) && ProvinceFlowSumJob.run(jobOutput, jobOutput)) {
-            return parseOutput(fs,  jobOuputPath);
+        if (JoinTransactionFlowMapReduceJob.run(joinInput, joinOutput) && ProvinceFlowSumJob.run(joinOutput, jobOutput)) {
+            var res = parseOutput(fs,  jobOuputPath);
+            res.sort((a, b) -> Double.compare(b.getTotal(), a.getTotal()));
+            return size > res.size() ? res : res.subList(0, size);
         } else return List.of();
 
     }
