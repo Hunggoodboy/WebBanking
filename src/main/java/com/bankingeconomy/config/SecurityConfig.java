@@ -47,6 +47,7 @@ public class SecurityConfig {
             "/register",
             "/dashboard",
             "/admin/dashboard",
+            "/admin/top-transfer-time",
             "/transfer",
             "/beneficiaries",
             "/profile",

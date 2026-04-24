@@ -1,5 +1,6 @@
 package com.bankingeconomy.service;
 
+import com.bankingeconomy.dto.response.AdminTopTransferTimeResponse;
 import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
 import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
 import com.bankingeconomy.entity.User;
@@ -13,4 +14,5 @@ public interface ReportService {
     double getMyBalance(User user);
     TransactionStatisticsResponse getMyTransactionStatistics(String email, LocalDateTime start, LocalDateTime end, String groupBy);
     TransactionStatisticsResponse getAdminDashboardStatistics(LocalDateTime start, LocalDateTime end, String groupBy);
+    AdminTopTransferTimeResponse getAdminTopTransferTimeStatistics(String month, boolean rerunJob);
 }

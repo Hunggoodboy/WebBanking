@@ -42,6 +42,9 @@ public class PageController {
     @GetMapping("/statistics")
     public String statistics() {return "Statistics";}
 
+    @GetMapping("/admin/top-transfer-time")
+    public String adminTopTransferTime() {return "AdminTopTransferTime";}
+
     @GetMapping("/beneficiaries")
     public String beneficiaries() {return "Beneficiaries";}
 }

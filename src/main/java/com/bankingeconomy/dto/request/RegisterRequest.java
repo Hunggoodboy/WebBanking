@@ -1,5 +1,6 @@
 package com.bankingeconomy.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -13,36 +14,39 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RegisterRequest {
 
-    @NotBlank(message = "Họ tên không được để trống")
-    @Size(min = 2, message = "Họ tên phải có ít nhất 2 ký tự")
+    @NotBlank(message = "Ho ten khong duoc de trong")
+    @Size(min = 2, message = "Ho ten phai co it nhat 2 ky tu")
     private String fullName;
 
-    @NotBlank(message = "Số điện thoại không được để trống")
-    @Pattern(regexp = "^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$",
-            message = "Số điện thoại không đúng định dạng Việt Nam")
+    @NotBlank(message = "So dien thoai khong duoc de trong")
+    @Pattern(
+            regexp = "^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$",
+            message = "So dien thoai khong dung dinh dang Viet Nam"
+    )
     private String phone;
 
-    @NotBlank(message = "số CMND/CCCD không được để trống")
-    @Pattern(regexp = "^\\d{12}$", message = "Căn cước công dân phải bao gồm 12 chữ số")
+    @NotBlank(message = "So CMND/CCCD khong duoc de trong")
+    @Pattern(regexp = "^\\d{12}$", message = "Can cuoc cong dan phai bao gom 12 chu so")
     private String identityCard;
 
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không đúng định dạng")
+    @NotBlank(message = "Email khong duoc de trong")
+    @Email(message = "Email khong dung dinh dang")
     private String email;
 
-    @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 8, message = "Mật khẩu phải có ít nhất 8 ký tự")
+    @NotBlank(message = "Mat khau khong duoc de trong")
+    @Size(min = 8, message = "Mat khau phai co it nhat 8 ky tu")
     private String password;
 
-    @NotBlank(message = "Vui lòng nhập lại mật khẩu")
+    // Optional for bulk-import payloads such as users_1000.json.
     private String confirmPassword;
 
-    @NotBlank(message = "Vui lòng nhập tỉnh thành")
+    @NotBlank(message = "Vui long nhap tinh thanh")
     private String province;
 
-    @NotBlank(message = "Vui lòng nhập quận huyện")
+    @NotBlank(message = "Vui long nhap quan huyen")
     private String district;
 
     public void setFullName(String fullName) {
@@ -84,5 +88,4 @@ public class RegisterRequest {
 
         return value.trim().replaceAll("\\s+", " ");
     }
-
 }

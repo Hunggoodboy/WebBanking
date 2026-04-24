@@ -6,14 +6,12 @@ import com.bankingeconomy.dto.response.RegisterResponse;
 import com.bankingeconomy.dto.response.UserResponseDTO;
 import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.User;
-import com.bankingeconomy.enums.Role;
 import com.bankingeconomy.exception.AppException;
 import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,71 +19,63 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
+    private static final double DEFAULT_INITIAL_BALANCE = 100_000_000.0;
+
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
-        validateRegisterRequest(request);
+        RegisterRequest normalizedRequest = prepareRegisterRequest(request);
+        validateRegisterRequest(normalizedRequest);
 
-        if(userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(normalizedRequest.getEmail())) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
-        if(userRepository.existsByPhone(request.getPhone())) {
+        if (userRepository.existsByPhone(normalizedRequest.getPhone())) {
             throw new AppException(ErrorCode.PHONE_EXISTED);
         }
-        if(userRepository.existsByIdentityCard(request.getIdentityCard())) {
+        if (userRepository.existsByIdentityCard(normalizedRequest.getIdentityCard())) {
             throw new AppException(ErrorCode.IDENTITY_CARD_EXISTED);
         }
 
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
         User user = User.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName())
-                .province(request.getProvince())
-                .district(request.getDistrict())
-                .phone(request.getPhone())
-                .identityCard(request.getIdentityCard())
-                .role(User.Role.valueOf("CUSTOMER"))
+                .email(normalizedRequest.getEmail())
+                .password(passwordEncoder.encode(normalizedRequest.getPassword()))
+                .fullName(normalizedRequest.getFullName())
+                .province(normalizedRequest.getProvince())
+                .district(normalizedRequest.getDistrict())
+                .phone(normalizedRequest.getPhone())
+                .identityCard(normalizedRequest.getIdentityCard())
+                .role(User.Role.CUSTOMER)
                 .build();
 
         try {
             userRepository.saveAndFlush(user);
+            Account account = createPrimaryAccount(user);
+            return buildRegisterResponse(user, account);
         } catch (RuntimeException ex) {
             throw resolveRegisterException(ex);
         }
-
-//        Account account = Account.builder()
-//                .user(user)
-//                .accountNumber(generateAccountNumber())
-//                .balance(100_000_000.0)
-//                .status(Account.AccountStatus.ACTIVE)
-//                .createdAt(new Date())
-//                .build();
-//        accountRepository.save(account);
-
-        return RegisterResponse.builder()
-                .email(user.getEmail())
-                .build();
-
     }
 
     @Override
     public UserResponseDTO getCurrentUser(User currentUser) {
+        ensureCurrentUser(currentUser);
         return toUserResponse(currentUser);
     }
 
     @Override
     public UserResponseDTO updateCurrentUser(User currentUser, ProfileUpdateRequest request) {
+        ensureCurrentUser(currentUser);
         validateProfileUpdateRequest(request);
 
         if (!Objects.equals(normalize(currentUser.getEmail()), normalize(request.getEmail()))
@@ -120,6 +110,63 @@ public class UserServiceImpl implements UserService {
         return toUserResponse(currentUser);
     }
 
+    @Override
+    public List<RegisterResponse> registerBulk(List<RegisterRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Danh sach dang ky khong duoc de trong");
+        }
+
+        return requests.stream()
+                .map(this::register)
+                .collect(Collectors.toList());
+    }
+
+    private RegisterRequest prepareRegisterRequest(RegisterRequest request) {
+        if (request == null) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Du lieu dang ky khong hop le");
+        }
+
+        if (isBlank(request.getConfirmPassword())) {
+            request.setConfirmPassword(request.getPassword());
+        }
+
+        return request;
+    }
+
+    private Account createPrimaryAccount(User user) {
+        Account account = Account.builder()
+                .user(user)
+                .accountNumber(generateUniqueAccountNumber())
+                .balance(DEFAULT_INITIAL_BALANCE)
+                .status(Account.AccountStatus.ACTIVE)
+                .createdAt(new Date())
+                .build();
+
+        return accountRepository.save(account);
+    }
+
+    private String generateUniqueAccountNumber() {
+        for (int attempt = 0; attempt < 20; attempt++) {
+            long raw = ThreadLocalRandom.current().nextLong(100_000_000_000L, 1_000_000_000_000L);
+            String candidate = String.valueOf(raw);
+            if (!accountRepository.existsByAccountNumber(candidate)) {
+                return candidate;
+            }
+        }
+
+        throw new AppException(ErrorCode.INVALID_INPUT, "Khong the sinh so tai khoan duy nhat. Vui long thu lai.");
+    }
+
+    private RegisterResponse buildRegisterResponse(User user, Account account) {
+        return RegisterResponse.builder()
+                .userId(user.getId())
+                .accountId(account.getId())
+                .email(user.getEmail())
+                .accountNumber(account.getAccountNumber())
+                .initialBalance(account.getBalance())
+                .build();
+    }
+
     private RuntimeException resolveRegisterException(RuntimeException ex) {
         String message = extractDeepestMessage(ex).toLowerCase(Locale.ROOT);
 
@@ -132,11 +179,20 @@ public class UserServiceImpl implements UserService {
         if (message.contains("email")) {
             return new AppException(ErrorCode.USER_EXISTED);
         }
+        if (message.contains("account_number")) {
+            return new AppException(ErrorCode.INVALID_INPUT, "So tai khoan bi trung. Vui long thu lai.");
+        }
         if (message.contains("province")) {
-            return new AppException(ErrorCode.INVALID_INPUT, "Database/schema đang lỗi ở cột province. Dữ liệu tỉnh/thành đã được gửi nhưng không lưu được.");
+            return new AppException(
+                    ErrorCode.INVALID_INPUT,
+                    "Database/schema dang loi o cot province. Du lieu da gui nhung khong luu duoc."
+            );
         }
         if (message.contains("district")) {
-            return new AppException(ErrorCode.INVALID_INPUT, "Database/schema đang lỗi ở cột district. Dữ liệu quận/huyện đã được gửi nhưng không lưu được.");
+            return new AppException(
+                    ErrorCode.INVALID_INPUT,
+                    "Database/schema dang loi o cot district. Du lieu da gui nhung khong luu duoc."
+            );
         }
         if (message.contains("uniqueidentifier")
                 || message.contains("conversion failed")
@@ -156,25 +212,31 @@ public class UserServiceImpl implements UserService {
 
     private void validateRegisterRequest(RegisterRequest request) {
         if (isBlank(request.getProvince())) {
-            throw new AppException(ErrorCode.INVALID_INPUT, "Vui lòng nhập tỉnh thành");
+            throw new AppException(ErrorCode.INVALID_INPUT, "Vui long nhap tinh thanh");
         }
 
         if (isBlank(request.getDistrict())) {
-            throw new AppException(ErrorCode.INVALID_INPUT, "Vui lòng nhập quận huyện");
+            throw new AppException(ErrorCode.INVALID_INPUT, "Vui long nhap quan huyen");
         }
 
         if (!Objects.equals(request.getPassword(), request.getConfirmPassword())) {
-            throw new AppException(ErrorCode.INVALID_INPUT, "Mật khẩu xác nhận không khớp");
+            throw new AppException(ErrorCode.INVALID_INPUT, "Mat khau xac nhan khong khop");
         }
     }
 
     private void validateProfileUpdateRequest(ProfileUpdateRequest request) {
         if (isBlank(request.getProvince())) {
-            throw new AppException(ErrorCode.INVALID_INPUT, "Vui lòng nhập tỉnh thành");
+            throw new AppException(ErrorCode.INVALID_INPUT, "Vui long nhap tinh thanh");
         }
 
         if (isBlank(request.getDistrict())) {
-            throw new AppException(ErrorCode.INVALID_INPUT, "Vui lòng nhập quận huyện");
+            throw new AppException(ErrorCode.INVALID_INPUT, "Vui long nhap quan huyen");
+        }
+    }
+
+    private void ensureCurrentUser(User currentUser) {
+        if (currentUser == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
     }
 
@@ -213,19 +275,5 @@ public class UserServiceImpl implements UserService {
         }
 
         return message == null ? "" : message;
-    }
-    public List<RegisterResponse> registerBulk(List<RegisterRequest> requests) {
-        return requests.stream()
-                .map(this::register)   // tái dùng logic register đơn lẻ
-                .collect(Collectors.toList());
-    }
-    private String generateAccountNumber() {
-        return accountRepository.findAll().stream()
-                .map(Account::getAccountNumber)
-                .filter(n -> n != null && n.matches("\\d+"))
-                .mapToLong(Long::parseLong)
-                .max()
-                .orElse(987654321005L) // nếu chưa có account nào thì bắt đầu từ đây
-                + 1 + ""; // +1 rồi convert sang String
     }
 }
