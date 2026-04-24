@@ -47,7 +47,7 @@ public class SecurityConfig {
             "/register",
             "/dashboard",
             "/admin/dashboard",
-            "/admin/max-province-flow"
+            "/admin/max-province-flow",
             "/transfer",
             "/profile",
             "/api/test-kafka/**",
