@@ -741,4 +741,30 @@ public class ReportServiceImpl implements ReportService {
             this.accountNumber = accountNumber;
         }
     }
+    @Override
+public MonthlyReportResponse getMonthlyReport(String email, YearMonth month) {
+
+    // validate user
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+    // time range của tháng
+    LocalDateTime start = month.atDay(1).atStartOfDay();
+    LocalDateTime end = month.atEndOfMonth().atTime(23, 59, 59);
+
+    // gọi query DB
+    Object[] result = reportRepository.getMonthlySummary(email, start, end);
+
+    double totalIn = 0;
+    double totalOut = 0;
+
+    if (result != null) {
+        totalIn = result[0] != null ? ((Number) result[0]).doubleValue() : 0;
+        totalOut = result[1] != null ? ((Number) result[1]).doubleValue() : 0;
+    }
+
+    double profit = totalIn - totalOut;
+
+    return new MonthlyReportResponse(totalIn, totalOut, profit);
+}
 }
