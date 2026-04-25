@@ -130,4 +130,18 @@ public class ReportController {
         return new ResponseData<>(200,
                 "Lấy danh sách Top 5% khách hàng đại gia năm " + targetYear + " thành công", data);
     }
+    @GetMapping("/monthly-profit")
+public ResponseData<MonthlyReportResponse> getMonthlyProfit(
+        @AuthenticationPrincipal User user,
+        @RequestParam int year,
+        @RequestParam int month
+) {
+
+    MonthlyReportResponse data = reportService.getMonthlyReport(
+            user.getEmail(),
+            YearMonth.of(year, month)
+    );
+
+    return ResponseData.success(data);
+}
 }
