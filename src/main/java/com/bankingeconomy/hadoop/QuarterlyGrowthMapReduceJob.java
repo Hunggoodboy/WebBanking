@@ -112,7 +112,7 @@ public class QuarterlyGrowthMapReduceJob {
         }
 
         String year       = args[0];
-        String inputPath  = "/data/transactions/";
+        String inputPath = "/data/transactions/*/*/*/*/*.csv";
         String outputPath = "/banking/reports/quarterly_growth_" + year;
 
         Configuration conf = new Configuration();
