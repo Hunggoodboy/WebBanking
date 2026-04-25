@@ -1,10 +1,15 @@
 package com.bankingeconomy.service.Impl;
 
-import com.bankingeconomy.dto.response.*;
+import com.bankingeconomy.dto.response.AccountTransferPointResponse;
 import com.bankingeconomy.dto.response.AdminTopTransferTimeResponse;
 import com.bankingeconomy.dto.response.PeakTransferWindowResponse;
+import com.bankingeconomy.dto.response.StatisticBreakdownResponse;
+import com.bankingeconomy.dto.response.StatisticPointResponse;
 import com.bankingeconomy.dto.response.TimeAggregatePointResponse;
 import com.bankingeconomy.dto.response.TopTransferUserResponse;
+import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
+import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
+import com.bankingeconomy.dto.response.TransactionStatisticsSummaryResponse;
 import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.entity.User;
@@ -33,7 +38,16 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -92,38 +106,7 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public AdminTopTransferTimeResponse getAdminTopTransferTimeStatistics(String month, boolean rerunJob) {
-        String normalizedMonth = normalizeMonth(month);
-        YearMonth yearMonth = YearMonth.parse(normalizedMonth);
-        String outputDirectory = TOP_TRANSFER_OUTPUT_BASE + "/month=" + normalizedMonth;
-        Path reportFile = new Path(outputDirectory + "/part-r-00000");
-
-        FileSystem fileSystem = fileSystemProvider.getIfAvailable();
-        if (fileSystem == null) {
-            throw new IllegalStateException("HDFS chưa được cấu hình nên không thể đọc kết quả MapReduce.");
-        }
-
-        try {
-            if (!hasInputFilesForMonth(fileSystem, yearMonth)) {
-                return buildEmptyTopTransferResponse(normalizedMonth, outputDirectory, "MAPREDUCE_NO_INPUT", yearMonth);
-            }
-
-            boolean reportExists = fileSystem.exists(reportFile);
-            if (rerunJob || !reportExists) {
-                String result = mapReduceRunnerService.runTopTransferTimeJob(normalizedMonth);
-                if (result == null || result.startsWith("ERROR") || "JOB_FAILED".equals(result)) {
-                    throw new IllegalStateException("Không chạy được MapReduce cho tháng " + normalizedMonth + ". " + result);
-                }
-            }
-
-            if (!fileSystem.exists(reportFile)) {
-                return buildEmptyTopTransferResponse(normalizedMonth, outputDirectory, "MAPREDUCE_EMPTY", yearMonth);
-            }
-
-            return readTopTransferTimeReport(fileSystem, yearMonth, outputDirectory, reportFile);
-        } catch (IOException ex) {
-            log.error("Lỗi đọc thống kê giờ/ngày cao điểm từ HDFS cho tháng {}", normalizedMonth, ex);
-            throw new IllegalStateException("Không đọc được kết quả thống kê từ HDFS.", ex);
-        }
+        return adminTopTransferTimeService.getTopTransferTimeStatistics(month, rerunJob);
     }
 
     private TransactionStatisticsResponse buildStatisticsResponse(List<Transaction> transactions,
@@ -209,7 +192,6 @@ public class ReportServiceImpl implements ReportService {
                 .summary(summary)
                 .points(points)
                 .statusBreakdown(statusBreakdown)
-                .topRecipients(currentUserId != null ? buildTopRecipients(transactions, currentUserId) : List.of())
                 .mapReduceTopAccounts(List.of())
                 .build();
     }
@@ -722,6 +704,7 @@ public class ReportServiceImpl implements ReportService {
             return fullName;
         }
     }
+
     private static class MutableAggregate {
         protected long totalTransactions;
         protected double totalAmount;
