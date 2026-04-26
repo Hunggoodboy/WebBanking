@@ -47,6 +47,7 @@ public class SecurityConfig {
             "/register",
             "/dashboard",
             "/admin/dashboard",
+            "/admin/top-vip-customers",
             "/transfer",
             "/beneficiaries",
             "/profile",

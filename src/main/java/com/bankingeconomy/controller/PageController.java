@@ -44,4 +44,7 @@ public class PageController {
 
     @GetMapping("/beneficiaries")
     public String beneficiaries() {return "Beneficiaries";}
+
+    @GetMapping("/admin/top-vip-customers")
+    public String topVipCustomers() {return "TopVipCustomers";}
 }
