@@ -144,4 +144,21 @@ public ResponseData<MonthlyReportResponse> getMonthlyProfit(
 
     return ResponseData.success(data);
 }
+  @GetMapping("/monthly-range")
+public ResponseData<List<MonthlyReportItemResponse>> getMonthlyReportRange(
+        @RequestParam String email,
+        @RequestParam int startYear,
+        @RequestParam int startMonth,
+        @RequestParam int endYear,
+        @RequestParam int endMonth
+) {
+    YearMonth startYM = YearMonth.of(startYear, startMonth);
+    YearMonth endYM = YearMonth.of(endYear, endMonth);
+
+    LocalDateTime start = startYM.atDay(1).atStartOfDay();
+    LocalDateTime end = endYM.atEndOfMonth().atTime(23, 59, 59);
+
+    return new ResponseData<>(200, "Success",
+            reportService.getMonthlyReportRange(email, start, end));
+}
 }
