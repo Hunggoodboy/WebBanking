@@ -55,7 +55,7 @@ public class TopTransferTimeMapReduceJob {
             String status = columns[IDX_STATUS].trim().toUpperCase(Locale.ROOT);
             String rowMonth = columns[IDX_MONTH].trim();
 
-            if (!"OUT".equals(direction) || !"SUCCESS".equals(status) || !targetMonth.equals(rowMonth)) {
+            if (!"OUT".equals(direction) || !isSuccessfulStatus(status) || !targetMonth.equals(rowMonth)) {
                 return;
             }
 
@@ -91,6 +91,10 @@ public class TopTransferTimeMapReduceJob {
 
             outputKey.set("DAY_USER|" + day + "|" + userId + "|" + accountNumber);
             context.write(outputKey, outputValue);
+        }
+
+        private boolean isSuccessfulStatus(String status) {
+            return "SUCCESS".equals(status) || "COMPLETED".equals(status);
         }
     }
 

@@ -1,15 +1,10 @@
 package com.bankingeconomy.service.Impl;
 
-import com.bankingeconomy.dto.response.AccountTransferPointResponse;
+import com.bankingeconomy.dto.response.*;
 import com.bankingeconomy.dto.response.AdminTopTransferTimeResponse;
 import com.bankingeconomy.dto.response.PeakTransferWindowResponse;
-import com.bankingeconomy.dto.response.StatisticBreakdownResponse;
-import com.bankingeconomy.dto.response.StatisticPointResponse;
 import com.bankingeconomy.dto.response.TimeAggregatePointResponse;
 import com.bankingeconomy.dto.response.TopTransferUserResponse;
-import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
-import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
-import com.bankingeconomy.dto.response.TransactionStatisticsSummaryResponse;
 import com.bankingeconomy.entity.Account;
 import com.bankingeconomy.entity.Transaction;
 import com.bankingeconomy.entity.User;
@@ -18,6 +13,7 @@ import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.ReportRepository;
 import com.bankingeconomy.repository.UserRepository;
+import com.bankingeconomy.service.AdminTopTransferTimeService;
 import com.bankingeconomy.service.MapReduceRunnerService;
 import com.bankingeconomy.service.ReportService;
 import lombok.RequiredArgsConstructor;
@@ -38,16 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +53,8 @@ public class ReportServiceImpl implements ReportService {
     private final AccountRepository accountRepository;
     private final ObjectProvider<FileSystem> fileSystemProvider;
     private final MapReduceRunnerService mapReduceRunnerService;
+    private final AdminTopTransferTimeService adminTopTransferTimeService;
+
 
     @Override
     public Page<TransactionHistoryItemResponse> getMyTransactionHistory(String email, LocalDateTime start, LocalDateTime end, Pageable pageable) {
@@ -192,6 +181,7 @@ public class ReportServiceImpl implements ReportService {
                 .summary(summary)
                 .points(points)
                 .statusBreakdown(statusBreakdown)
+                .topRecipients(currentUserId != null ? buildTopRecipients(transactions, currentUserId) : List.of())
                 .mapReduceTopAccounts(List.of())
                 .build();
     }
@@ -704,7 +694,6 @@ public class ReportServiceImpl implements ReportService {
             return fullName;
         }
     }
-
     private static class MutableAggregate {
         protected long totalTransactions;
         protected double totalAmount;
