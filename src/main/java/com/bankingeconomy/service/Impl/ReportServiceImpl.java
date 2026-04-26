@@ -767,4 +767,27 @@ public MonthlyReportResponse getMonthlyReport(String email, YearMonth month) {
 
     return new MonthlyReportResponse(totalIn, totalOut, profit);
 }
+    @Override
+public List<MonthlyReportItemResponse> getMonthlyReportRange(
+        String email,
+        LocalDateTime start,
+        LocalDateTime end
+) {
+    List<Object[]> rows = reportRepository.getMonthlyReportRange(email, start, end);
+
+    return rows.stream()
+            .map(row -> {
+                String month = (String) row[0];
+                double totalIn = row[1] != null ? ((Number) row[1]).doubleValue() : 0;
+                double totalOut = row[2] != null ? ((Number) row[2]).doubleValue() : 0;
+
+                return MonthlyReportItemResponse.builder()
+                        .month(month)
+                        .totalIn(totalIn)
+                        .totalOut(totalOut)
+                        .profit(totalIn - totalOut)
+                        .build();
+            })
+            .toList();
+}
 }
