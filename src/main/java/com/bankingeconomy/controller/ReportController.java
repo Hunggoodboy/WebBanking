@@ -1,12 +1,7 @@
 package com.bankingeconomy.controller;
 
 
-import com.bankingeconomy.dto.response.ProvinceFlowAmountDTO;
-import com.bankingeconomy.dto.response.AdminTopTransferTimeResponse;
-import com.bankingeconomy.dto.response.ResponseData;
-import com.bankingeconomy.dto.response.TopCustomerResponse;
-import com.bankingeconomy.dto.response.TransactionHistoryItemResponse;
-import com.bankingeconomy.dto.response.TransactionStatisticsResponse;
+import com.bankingeconomy.dto.response.*;
 import com.bankingeconomy.entity.User;
 import com.bankingeconomy.service.Impl.TransactionProvinceFlowService;
 import com.bankingeconomy.exception.AppException;
@@ -27,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.Year;
+import java.time.YearMonth;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -39,7 +35,7 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    private TransactionProvinceFlowService flowService;
+    private final TransactionProvinceFlowService flowService;
 
     @GetMapping("/my-transactions")
     public ResponseData<Map<String, Object>> myTransactions(

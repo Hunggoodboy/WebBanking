@@ -49,6 +49,10 @@ public class ProvinceFlowSumJob {
 
     public static boolean run(String input, String output) throws IOException, InterruptedException, ClassNotFoundException {
         Configuration conf = new Configuration();
+        conf.set("fs.defaultFS", "hdfs://localhost:9000");
+        conf.set("mapreduce.framework.name", "local");
+        conf.set("dfs.client.use.datanode.hostname", "true");
+        conf.set("dfs.datanode.use.datanode.hostname", "true");
         Job job = Job.getInstance(conf, "Sum Flow");
 
         job.setJarByClass(ProvinceFlowSumJob.class);

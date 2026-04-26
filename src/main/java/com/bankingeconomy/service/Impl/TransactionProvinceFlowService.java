@@ -25,7 +25,7 @@ public class TransactionProvinceFlowService {
     public List<ProvinceFlowAmountDTO> getTopProvinceFlowAmount(int size) throws IOException, InterruptedException, ClassNotFoundException {
         if (size <= 0) return List.of();
 
-        String joinInput = "/data/transactions/province=*/district=*/year=*/quarter=*/";
+        String joinInput = "/data/transactions/province=*/district=*/year=*/quarter=*/*.csv";
         Path inputPath = new Path(joinInput);
         String joinOutput = "/data/report/temp/join_transaction/";
         Path joinOutputPath = new Path(joinOutput);

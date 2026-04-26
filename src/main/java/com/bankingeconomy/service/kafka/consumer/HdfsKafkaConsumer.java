@@ -42,7 +42,7 @@ public class HdfsKafkaConsumer {
             String outDist = normalizeLocationName(tx.getFromDistrict());
 
             String outKey = BASE_PATH + String.format("province=%s/district=%s/year=%d/quarter=Q%d/", outProv, outDist, year, quarter);
-            String outCsv = String.format("%s,%s,%s,OUT,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
+            String outCsv = String.format(java.util.Locale.US,"%s,%s,%s,OUT,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
                     tx.getTransactionId(), tx.getFromUserId(), tx.getFromAccountNumber(),
                     tx.getToAccountNumber(), tx.getAmount(), tx.getStatus(), tx.getCreatedAt(),
                     outProv, outDist, year, quarter, monthStr);
@@ -54,7 +54,7 @@ public class HdfsKafkaConsumer {
             String inDist = normalizeLocationName(tx.getToDistrict());
 
             String inKey = BASE_PATH + String.format("province=%s/district=%s/year=%d/quarter=Q%d/", inProv, inDist, year, quarter);
-            String inCsv = String.format("%s,%s,%s,IN,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
+            String inCsv = String.format(java.util.Locale.US,"%s,%s,%s,IN,%s,%.2f,%s,%s,%s,%s,%d,Q%d,%s\n",
                     tx.getTransactionId(), tx.getToUserId(), tx.getToAccountNumber(),
                     tx.getFromAccountNumber(), tx.getAmount(), tx.getStatus(), tx.getCreatedAt(),
                     inProv, inDist, year, quarter, monthStr);

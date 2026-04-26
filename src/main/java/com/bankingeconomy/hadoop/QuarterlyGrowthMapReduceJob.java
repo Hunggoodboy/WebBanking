@@ -19,53 +19,53 @@ public class QuarterlyGrowthMapReduceJob {
 
     // ----------------------------------------------------------
     // MAPPER
-    // Input: mỗi dòng CSV từ HDFS
-    // Output: key = "2024_Q1", value = "500000.0,SUCCESS"
     // ----------------------------------------------------------
-    public static class QuarterlyMapper
-            extends Mapper<LongWritable, Text, Text, Text> {
+    public static class QuarterlyMapper extends Mapper<LongWritable, Text, Text, Text> {
 
         private final Text quarterKey = new Text();
         private final Text valueOut   = new Text();
+        private String targetYear;
 
         @Override
-        protected void map(LongWritable offset, Text line, Context context)
-                throws IOException, InterruptedException {
+        protected void setup(Context context) {
+            targetYear = context.getConfiguration().get("targetYear", "").trim();
+        }
 
+        @Override
+        protected void map(LongWritable offset, Text line, Context context) throws IOException, InterruptedException {
             String row = line.toString().trim();
-            if (row.startsWith("transaction_id") || row.isEmpty()) return;
 
-            // CSV columns:
-            // 0:transaction_id, 1:owner_user_id, 2:owner_account_id, 3:direction,
-            // 4:counterparty_account_id, 5:amount, 6:status, 7:created_at,
-            // 8:province, 9:district, 10:year, 11:quarter, 12:month
+            if (row.isEmpty() || row.startsWith("transaction_id")) return;
+
             String[] cols = row.split(",");
+
             if (cols.length < 13) return;
 
-            String amount  = cols[5].trim();
-            String status  = cols[6].trim();
-            String year    = cols[10].trim();
-            String quarter = cols[11].trim(); // "1", "2", "3", "4"
+            String amountStr = cols[5].trim();
+            String status    = cols[6].trim();
+            String rowYear   = cols[10].trim();
+            String quarter   = cols[11].trim().toUpperCase();
 
-            // Chỉ lấy Q1 và Q2
-            if (!quarter.equals("1") && !quarter.equals("2")) return;
+            if (!rowYear.equals(targetYear)) return;
+
+            if (quarter.equals("1")) quarter = "Q1";
+            if (quarter.equals("2")) quarter = "Q2";
+
+            if (!quarter.equals("Q1") && !quarter.equals("Q2")) return;
 
             try {
-                Double.parseDouble(amount); // validate
-            } catch (NumberFormatException e) {
-                return;
+                Double.parseDouble(amountStr); // Validate số tiền
+                quarterKey.set(targetYear + "_" + quarter);
+                valueOut.set(amountStr + "," + status);
+                context.write(quarterKey, valueOut);
+            } catch (NumberFormatException ignored) {
+                // Bỏ qua nếu giá trị tiền không hợp lệ
             }
-
-            quarterKey.set(year + "_Q" + quarter);       // "2024_Q1"
-            valueOut.set(amount + "," + status);          // "500000.0,SUCCESS"
-            context.write(quarterKey, valueOut);
         }
     }
 
     // ----------------------------------------------------------
     // REDUCER
-    // Input:  key = "2024_Q1", values = ["500000.0,SUCCESS", ...]
-    // Output: key = "2024_Q1", value = "totalAmount,txCount,successCount"
     // ----------------------------------------------------------
     public static class QuarterlyReducer
             extends Reducer<Text, Text, Text, Text> {
@@ -94,16 +94,13 @@ public class QuarterlyGrowthMapReduceJob {
                 }
             }
 
-            // Output: "totalAmount,txCount,successCount"
             result.set(totalAmount + "," + txCount + "," + successCount);
             context.write(quarter, result);
         }
     }
 
     // ----------------------------------------------------------
-    // MAIN
-    // Input HDFS:  /data/transactions/
-    // Output HDFS: /banking/reports/quarterly_growth_{year}/
+    // MAIN (Giữ nguyên như cũ)
     // ----------------------------------------------------------
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {

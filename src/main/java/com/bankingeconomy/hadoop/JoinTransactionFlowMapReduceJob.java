@@ -25,10 +25,10 @@ public class JoinTransactionFlowMapReduceJob {
         protected void map(LongWritable offset, Text line, Context context)
                 throws IOException, InterruptedException {
             String data = line.toString();
-            if(data.startsWith("transaction_id")) return;
+            if(data.isEmpty() || data.startsWith("transaction_id")) return;
 
             String[] columns = data.split(",");
-
+            if (columns.length < 13) return;
             String transactionId = columns[0];
             String province = columns[8];
             String direction = columns[3];
@@ -79,7 +79,13 @@ public class JoinTransactionFlowMapReduceJob {
 
     public static boolean run(String input, String output) throws IOException, InterruptedException, ClassNotFoundException {
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "Join Transaction");
+
+        conf.set("fs.defaultFS", "hdfs://localhost:9000");
+        conf.set("mapreduce.framework.name", "local");
+        conf.set("dfs.client.use.datanode.hostname", "true");
+        conf.set("dfs.datanode.use.datanode.hostname", "true");
+
+        Job job = Job.getInstance(conf, "JoinTransactionFlow");
 
         job.setJarByClass(JoinTransactionFlowMapReduceJob.class);
 

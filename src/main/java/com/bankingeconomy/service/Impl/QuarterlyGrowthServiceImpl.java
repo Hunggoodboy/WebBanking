@@ -53,6 +53,7 @@ public class QuarterlyGrowthServiceImpl implements QuarterlyGrowthService {
             conf.set("mapreduce.framework.name",           "local");
             conf.set("dfs.client.use.datanode.hostname",   "true");
             conf.set("dfs.datanode.use.datanode.hostname", "true");
+            conf.set("targetYear", year);
 
             Path outPath = new Path(outputPath);
 
