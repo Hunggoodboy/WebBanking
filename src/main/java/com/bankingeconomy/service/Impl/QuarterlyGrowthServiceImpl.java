@@ -35,17 +35,25 @@ public class QuarterlyGrowthServiceImpl implements QuarterlyGrowthService {
     // ----------------------------------------------------------------
     @Override
     public String runQuarterlyGrowthJob(String year) {
-        String inputPath  = "/data/transactions/";
+        String inputGlob  = "/data/transactions/*/*/*/*/*.csv";
         String outputPath = "/banking/reports/quarterly_growth_" + year;
 
         try {
+            // lấy FileSystem từ Spring bean thay vì tạo mới bằng
+            //            FileSystem.get(conf) — tránh mở connection thừa, dùng
+            //            cùng config đã được Spring quản lý
+            FileSystem fs = fileSystemProvider.getIfAvailable();
+            if (fs == null) {
+                log.error("HDFS FileSystem bean không khả dụng");
+                return "Lỗi: HDFS không khả dụng";
+            }
+
             Configuration conf = new Configuration();
-            conf.set("fs.defaultFS", "hdfs://localhost:9000");
-            conf.set("mapreduce.framework.name", "local");
-            conf.set("dfs.client.use.datanode.hostname", "true");
+            conf.set("fs.defaultFS",                       "hdfs://localhost:9000");
+            conf.set("mapreduce.framework.name",           "local");
+            conf.set("dfs.client.use.datanode.hostname",   "true");
             conf.set("dfs.datanode.use.datanode.hostname", "true");
 
-            FileSystem fs = FileSystem.get(conf);
             Path outPath = new Path(outputPath);
 
             // Xóa output cũ nếu đã tồn tại (tránh lỗi job)
@@ -64,14 +72,17 @@ public class QuarterlyGrowthServiceImpl implements QuarterlyGrowthService {
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(Text.class);
 
-            FileInputFormat.addInputPath(job, new Path("/data/transactions/*/*/*/*/*.csv"));
+            // FIX Bug 2: dùng biến inputGlob thay vì hardcode path
+            FileInputFormat.addInputPath(job, new Path(inputGlob));
+            FileOutputFormat.setOutputPath(job, outPath);   // Bug 1 đã được fix trước đó
+
             log.info("Bắt đầu chạy MapReduce QuarterlyGrowth cho năm: {}", year);
             boolean success = job.waitForCompletion(true);
 
             if (success) {
                 return "Job chạy thành công! Kết quả lưu tại: " + outputPath;
             } else {
-                return "Job thất bại. Vui lòng check log.";
+                return "Job thất bại. Vui lòng kiểm tra log Hadoop.";
             }
 
         } catch (Exception e) {
@@ -120,8 +131,8 @@ public class QuarterlyGrowthServiceImpl implements QuarterlyGrowthService {
                     String[] parts = trimmed.split("\\t");
                     if (parts.length < 2) continue;
 
-                    String quarterKey  = parts[0].trim(); // "2024_Q1"
-                    String[] values    = parts[1].trim().split(",");
+                    String quarterKey = parts[0].trim(); // "2024_Q1"
+                    String[] values   = parts[1].trim().split(",");
                     if (values.length < 3) continue;
 
                     // Chỉ lấy đúng năm được yêu cầu
@@ -143,8 +154,8 @@ public class QuarterlyGrowthServiceImpl implements QuarterlyGrowthService {
                     qData.put("successRate",  successRate);
 
                     // Key chỉ lấy phần "Q1" hoặc "Q2"
-                    String label = quarterKey.contains("_") 
-                            ? quarterKey.split("_")[1] 
+                    String label = quarterKey.contains("_")
+                            ? quarterKey.split("_")[1]
                             : quarterKey;
                     quarterData.put(label, qData);
                 }
