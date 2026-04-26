@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>EBank - Luồng tiền liên tỉnh</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-100 via-emerald-50 to-teal-100 font-sans text-gray-800">
+<div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
+
+    <header class="mb-8">
+        <div class="bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl rounded-3xl px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-500 text-white flex items-center justify-center text-xl font-bold shadow-lg">E</div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">EBank</h1>
+                    <p class="text-sm text-gray-500">Báo cáo lưu chuyển tiền tệ</p>
+                </div>
+            </div>
+            <nav class="flex flex-wrap items-center gap-3 text-sm font-medium">
+                <a href="/dashboard"       class="px-4 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition">Tổng quan</a>
+                <a href="/admin/dashboard" class="px-4 py-2 rounded-xl bg-emerald-600 text-white shadow-md">Dashboard Admin</a>
+                <a href="/profile"         class="px-4 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition">Hồ sơ</a>
+            </nav>
+            <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 text-white flex items-center justify-center font-bold">
+                    <span id="userInitials">AD</span>
+                </div>
+                <div class="leading-tight">
+                    <p id="userName" class="font-semibold text-sm">Admin</p>
+                    <p class="text-xs text-gray-500">Quản trị viên</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    💸 Top 5 Hành lang dòng tiền
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    Phân tích luồng tiền gửi/nhận giữa các tỉnh thành có giá trị giao dịch cao nhất
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-xs font-bold text-emerald-600 uppercase">HDFS Source</p>
+                    <p class="text-xs text-gray-400">transaction_logs_v2.parquet</p>
+                </div>
+                <button id="runBtn" onclick="loadFlowData()"
+                        class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-all">
+                    PHÂN TÍCH DÒNG TIỀN
+                </button>
+            </div>
+        </div>
+        <div id="statusMsg" class="hidden mt-4 text-sm px-4 py-3 rounded-2xl animate-pulse"></div>
+    </div>
+
+    <div id="summaryCards" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6 opacity-0 transition-opacity duration-500">
+        <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6 flex items-center gap-5">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl">➔</div>
+            <div>
+                <p class="text-sm text-gray-500">Dòng tiền lớn nhất</p>
+                <h3 id="cardTopRoute" class="text-xl font-bold text-gray-800">—</h3>
+            </div>
+        </div>
+        <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6 flex items-center gap-5">
+            <div class="w-14 h-14 rounded-2xl bg-teal-100 text-teal-600 flex items-center justify-center text-2xl">💰</div>
+            <div>
+                <p class="text-sm text-gray-500">Tổng giá trị Top 5</p>
+                <h3 id="cardTotalVolume" class="text-xl font-bold text-gray-800">—</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+        <div class="xl:col-span-3 bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6">
+            <h3 class="text-lg font-bold text-slate-800 mb-6">Biểu đồ so sánh giá trị (VND)</h3>
+            <div class="relative" style="height:400px">
+                <canvas id="flowChart"></canvas>
+            </div>
+        </div>
+
+        <div class="xl:col-span-2 flex flex-col gap-4">
+            <h3 class="text-lg font-bold text-slate-800 px-2">Xếp hạng chi tiết</h3>
+            <div id="flowList" class="space-y-4">
+                <div class="bg-white/50 border border-dashed border-slate-300 rounded-3xl p-10 text-center text-slate-400">
+                    Chưa có dữ liệu phân tích
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = window.location.origin;
+    let flowChart = null;
+
+    function getToken() { return localStorage.getItem('token') || ''; }
+
+    async function loadFlowData() {
+      const btn = document.getElementById('runBtn');
+      const status = document.getElementById('statusMsg');
+
+      btn.disabled = true;
+      status.className = "mt-4 text-sm px-4 py-3 rounded-2xl bg-emerald-50 text-emerald-700 block";
+      status.textContent = "🚀 Đang khởi tạo MapReduce Job để quét dữ liệu HDFS...";
+
+      try {
+        // Gọi API theo yêu cầu: /api/reports/admin/max-province-flow?amount=5
+        const res = await fetch(`${API_BASE}/api/reports/admin/max-province-flow?amount=5`, {
+          headers: { Authorization: `Bearer ${getToken()}` }
+        });
+        const json = await res.json();
+
+        if (!res.ok) throw new Error(json?.message || 'Không thể tải dữ liệu');
+
+        const data = json.data || [];
+        renderUI(data);
+
+        status.textContent = "✅ Phân tích hoàn tất. Đã tìm thấy 5 luồng tiền tiêu biểu.";
+        setTimeout(() => status.classList.add('hidden'), 3000);
+      } catch (err) {
+        status.className = "mt-4 text-sm px-4 py-3 rounded-2xl bg-red-50 text-red-700 block";
+        status.textContent = "❌ Lỗi: " + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderUI(data) {
+      document.getElementById('summaryCards').classList.remove('opacity-0');
+
+      // 1. Render Cards
+      if (data.length > 0) {
+        const top = data[0];
+        const total = data.reduce((sum, item) => sum + item.totalAmount, 0);
+        document.getElementById('cardTopRoute').textContent = `${top.fromProvince} ➔ ${top.toProvince}`;
+        document.getElementById('cardTotalVolume').textContent = formatVND(total);
+      }
+
+      // 2. Render Chart
+      renderChart(data);
+
+      // 3. Render List
+      const listContainer = document.getElementById('flowList');
+      listContainer.innerHTML = data.map((item, index) => `
+        <div class="bg-white/90 border border-white/50 p-5 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+          <div class="flex justify-between items-start mb-3">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">#${index + 1}</span>
+            <span class="text-emerald-600 font-bold font-mono">${formatVND(item.totalAmount)}</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex-1">
+              <p class="text-xs text-gray-400 uppercase font-bold">Nguồn</p>
+              <p class="font-semibold text-slate-700">${item.fromProvince}</p>
+            </div>
+            <div class="text-slate-300 group-hover:text-emerald-400 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </div>
+            <div class="flex-1 text-right">
+              <p class="text-xs text-gray-400 uppercase font-bold">Đích</p>
+              <p class="font-semibold text-slate-700">${item.toProvince}</p>
+            </div>
+          </div>
+          <div class="mt-4 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-emerald-500 h-full" style="width: ${ (item.totalAmount / data[0].totalAmount * 100).toFixed(0) }%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderChart(data) {
+      const ctx = document.getElementById('flowChart').getContext('2d');
+      if (flowChart) flowChart.destroy();
+
+      flowChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: data.map(d => `${d.fromProvince} ➔ ${d.toProvince}`),
+          datasets: [{
+            data: data.map(d => d.totalAmount),
+            backgroundColor: [
+              '#10b981', '#059669', '#047857', '#065f46', '#064e3b'
+            ],
+            borderWidth: 0,
+            hoverOffset: 20
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+          },
+          cutout: '60%'
+        }
+      });
+    }
+
+    function formatVND(amount) {
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+
+    // Khởi tạo thông tin User
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!getToken()) window.location.href = '/login';
+      // Giả sử có hàm loadUserInfo như trang cũ
+    });
+</script>
+</body>
+</html>
