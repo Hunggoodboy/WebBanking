@@ -7,15 +7,22 @@ import com.bankingeconomy.service.HdfsService;
 import com.bankingeconomy.service.MapReduceRunnerService;
 import com.bankingeconomy.service.Impl.FailedByDistrictService;
 import com.bankingeconomy.service.Impl.FailedByDistrictService.DistrictRiskDTO;
+import com.bankingeconomy.service.ProvinceDensityService;
+import com.bankingeconomy.dto.response.ProvinceDensityDTO;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
 @RequestMapping("/api/hadoop")
@@ -28,6 +35,8 @@ public class HadoopController {
     private final TransactionRepository   transactionRepository;
     private final MapReduceRunnerService  mapReduceRunnerService;
     private final FailedByDistrictService failedByDistrictService;
+    private final ProvinceDensityService  provinceDensityService;
+    private final FileSystem              fileSystem;
 
     // API này nhận vào một cái tên và tạo thư mục trên HDFS
     @GetMapping("/create-dir")
@@ -89,4 +98,28 @@ public class HadoopController {
                     "Lỗi: " + e.getMessage());
         }
     }
+
+    /**
+     * GET /api/hadoop/province-density?year=2026&quarter=Q1
+     *
+     * Chạy MapReduce đọc từ HDFS phân mảnh theo province.
+     * Gộp tổng giao dịch theo từng tỉnh/thành phố.
+     * Trả về list sort theo totalTransactions giảm dần (mật độ cao nhất lên đầu).
+     */
+    @GetMapping("/province-density")
+    public ResponseData<List<ProvinceDensityDTO>> provinceDensity(
+            @RequestParam(defaultValue = "2026") String year,
+            @RequestParam(defaultValue = "Q1")   String quarter) {
+        try {
+            List<ProvinceDensityDTO> data = provinceDensityService.runAndGetResult(year, quarter);
+            return new ResponseData<>(HttpStatus.OK.value(),
+                    "Thống kê mật độ giao dịch theo tỉnh " + year + "-" + quarter, data);
+        } catch (Exception e) {
+            log.error("province-density error: {}", e.getMessage(), e);
+            return new ResponseData<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Lỗi: " + e.getMessage());
+        }
+    }
+
+
 }
