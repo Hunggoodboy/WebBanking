@@ -18,5 +18,5 @@ public interface ReportService {
     TransactionStatisticsResponse getAdminDashboardStatistics(LocalDateTime start, LocalDateTime end, String groupBy);
     AdminTopTransferTimeResponse getAdminTopTransferTimeStatistics(String month, boolean rerunJob);
     List<TopCustomerResponse> getTop5PercentVipCustomers(int year);
-
+    MonthlyReportResponse getMonthlyReport(String email, YearMonth month);
 }

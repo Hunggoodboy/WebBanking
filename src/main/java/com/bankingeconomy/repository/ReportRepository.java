@@ -90,5 +90,31 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
             """, nativeQuery = true)
     List<Object[]> findTop5PercentCustomersByYear(@Param("startDate") LocalDateTime startDate,
                                                   @Param("endDate") LocalDateTime endDate);
+    /**
+     * Tổng hợp:
+     * - totalIn: tiền nhận (toAccount)
+     * - totalOut: tiền gửi (fromAccount)
+     */
+   @Query("""
+    SELECT 
+        COALESCE(SUM(CASE 
+            WHEN ta.user.email = :email THEN t.amount 
+            ELSE 0 END), 0),
+        COALESCE(SUM(CASE 
+            WHEN fa.user.email = :email THEN t.amount 
+            ELSE 0 END), 0)
+    FROM Transaction t
+    LEFT JOIN t.fromAccount fa
+    LEFT JOIN fa.user fu
+    LEFT JOIN t.toAccount ta
+    LEFT JOIN ta.user tu
+    WHERE (fu.email = :email OR tu.email = :email)
+    AND t.createdAt BETWEEN :start AND :end
+""")
+Object[] getMonthlySummary(
+        @Param("email") String email,
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end
+);
 }
 
