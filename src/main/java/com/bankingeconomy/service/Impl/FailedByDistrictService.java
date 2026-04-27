@@ -34,12 +34,14 @@ public class FailedByDistrictService {
      *
      * failedTx      — FAILED + REVERSED (Nhóm 4: District Failure Rate)
      * reversedTx    — chỉ REVERSED (High Reversal Area)
-     * largeAmountTx — số lượt: cùng account OUT >= 500 triệu, >= 3 lần/giờ (Pattern Shift / High Frequency Large Value)
+     * largeAmountTx — giao dịch OUT >= 200 triệu (Pattern Shift / High Value)
      * rapidFireTx   — cùng account >= 2 lần/phút (Velocity Check)
      * fanOutTx      — số lượt fan-out counterparty unique/giờ (Fan-out pattern)
+     * smallTestTx   — cùng account >= 3 giao dịch nhỏ <= 2.000đ (Small Amount Testing)
      * failRate      — failedTx / totalTx * 100
      * reversalRate  — reversedTx / totalTx * 100
      * riskLevel     — CAO / TRUNG_BINH / THAP (tổng hợp)
+     * action        — hành động đề xuất cho admin
      */
     public record DistrictRiskDTO(
             String district,
@@ -51,26 +53,25 @@ public class FailedByDistrictService {
             int    fanOutTx,
             double failRate,
             double reversalRate,
-            String riskLevel
+            String riskLevel,
+            String action
     ) {}
-
-    private Configuration buildConf() {
-        Configuration conf = new Configuration();
-        conf.set("fs.defaultFS", "hdfs://localhost:9000");
-        conf.set("mapreduce.framework.name", "local");
-        conf.set("dfs.client.use.datanode.hostname", "true");
-        return conf;
-    }
 
     public List<DistrictRiskDTO> runAndGetResult(String year, String quarter) throws Exception {
         String inputGlob  = "/data/transactions/province=*/district=*/year="
                           + year + "/quarter=" + quarter + "/";
         String outputPath = "/data/reports/failed_by_district_" + year + "_" + quarter;
 
-        Configuration conf = buildConf();
-        FileSystem    fs   = FileSystem.get(conf);
-        Path          out  = new Path(outputPath);
+        // Dùng FileSystem bean đã inject — cùng connection với app
+        FileSystem fs = fileSystemProvider.getIfAvailable();
+        if (fs == null) throw new RuntimeException("HDFS FileSystem chưa sẵn sàng");
 
+        Configuration conf = fs.getConf();
+        // Bật local MapReduce
+        conf.set("mapreduce.framework.name", "local");
+        conf.set("dfs.client.use.datanode.hostname", "true");
+
+        Path out = new Path(outputPath);
         if (fs.exists(out)) fs.delete(out, true);
 
         FileStatus[] inputFiles = fs.globStatus(new Path(inputGlob));
@@ -155,27 +156,32 @@ public class FailedByDistrictService {
             double failRate    = total > 0 ? Math.round(failed   * 10000.0 / total) / 100.0 : 0.0;
             double reversalRate= total > 0 ? Math.round(reversed * 10000.0 / total) / 100.0 : 0.0;
 
-            // ── Phân loại mức độ rủi ro tổng hợp ─────────────────────────
-            // CAO:        failRate >= 20% | reversalRate >= 15% | rapidFire > 0
-            //             | fanOut >= 5  | largeAmount > 0 (nhiều GD >= 500tr/giờ)
-            // TRUNG_BINH: failRate >= 10% | reversalRate >= 5%
-            //             | largeAmount >= 2 | fanOut >= 2
-            // THAP:       còn lại
             String riskLevel;
-            if (failRate >= 20 || reversalRate >= 15
-                    || rapidFire > 0 || fanOut >= 5 || largeAmount > 0) {
+            if (failRate >= 20 || reversalRate >= 15 || rapidFire > 0 || fanOut >= 5) {
                 riskLevel = "CAO";
-            } else if (failRate >= 10 || reversalRate >= 5
-                    || largeAmount >= 2 || fanOut >= 2) {
+            } else if (failRate >= 10 || reversalRate >= 5 || largeAmount >= 5 || fanOut >= 2) {
                 riskLevel = "TRUNG_BINH";
             } else {
                 riskLevel = "THAP";
             }
 
+            String action;
+            if (rapidFire > 0) {
+                action = "Tam khoa GD 15 phut + Gui OTP";
+            } else if (reversalRate >= 15 || fanOut >= 5) {
+                action = "Bat buoc xac thuc khuon mat";
+            } else if (failRate >= 20) {
+                action = "Hien thi canh bao 'Mang yeu khu vuc'";
+            } else if (largeAmount >= 5) {
+                action = "Yeu cau xac thuc bo sung";
+            } else {
+                action = "Theo doi";
+            }
+
             result.add(new DistrictRiskDTO(
                     d, total, failed, reversed,
                     largeAmount, rapidFire, fanOut,
-                    failRate, reversalRate, riskLevel));
+                    failRate, reversalRate, riskLevel, action));
         }
 
         // Sort: CAO → TRUNG_BINH → THAP, cùng level thì theo failRate
