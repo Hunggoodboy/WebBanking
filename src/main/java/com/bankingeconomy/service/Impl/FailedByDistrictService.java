@@ -19,28 +19,39 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * Chạy MapReduce FailedTransactionByDistrictJob và trả kết quả về controller.
- *
- * Input HDFS:  /data/transactions/province=* /district=* /year={year}/quarter={quarter}/
- * Output HDFS: /data/reports/failed_by_district_{year}_{quarter}/
- */
 @Slf4j
 @Service
 public class FailedByDistrictService {
 
-    // Dùng ObjectProvider như ReportServiceImpl để tránh crash khi HDFS không available
     private final ObjectProvider<FileSystem> fileSystemProvider;
 
     public FailedByDistrictService(ObjectProvider<FileSystem> fileSystemProvider) {
         this.fileSystemProvider = fileSystemProvider;
     }
 
+    /**
+     * DTO đầy đủ các loại rủi ro theo district.
+     *
+     * failedTx      — FAILED + REVERSED (Nhóm 4: District Failure Rate)
+     * reversedTx    — chỉ REVERSED (High Reversal Area)
+     * largeAmountTx — số lượt: cùng account OUT >= 500 triệu, >= 3 lần/giờ (Pattern Shift / High Frequency Large Value)
+     * rapidFireTx   — cùng account >= 2 lần/phút (Velocity Check)
+     * fanOutTx      — số lượt fan-out counterparty unique/giờ (Fan-out pattern)
+     * failRate      — failedTx / totalTx * 100
+     * reversalRate  — reversedTx / totalTx * 100
+     * riskLevel     — CAO / TRUNG_BINH / THAP (tổng hợp)
+     */
     public record DistrictRiskDTO(
             String district,
             int    totalTx,
             int    failedTx,
-            double failRate
+            int    reversedTx,
+            int    largeAmountTx,
+            int    rapidFireTx,
+            int    fanOutTx,
+            double failRate,
+            double reversalRate,
+            String riskLevel
     ) {}
 
     private Configuration buildConf() {
@@ -53,25 +64,21 @@ public class FailedByDistrictService {
 
     public List<DistrictRiskDTO> runAndGetResult(String year, String quarter) throws Exception {
         String inputGlob  = "/data/transactions/province=*/district=*/year="
-                            + year + "/quarter=" + quarter + "/";
+                          + year + "/quarter=" + quarter + "/";
         String outputPath = "/data/reports/failed_by_district_" + year + "_" + quarter;
 
         Configuration conf = buildConf();
         FileSystem    fs   = FileSystem.get(conf);
         Path          out  = new Path(outputPath);
 
-        // Xóa output cũ nếu có
         if (fs.exists(out)) fs.delete(out, true);
 
-        // Kiểm tra có dữ liệu input không — FIX: dùng globStatus đúng cách
-        Path        inputPath   = new Path(inputGlob);
-        FileStatus[] inputFiles = fs.globStatus(inputPath);
+        FileStatus[] inputFiles = fs.globStatus(new Path(inputGlob));
         if (inputFiles == null || inputFiles.length == 0) {
             log.warn("Không có dữ liệu HDFS tại: {}", inputGlob);
             return List.of();
         }
 
-        // Khởi tạo và chạy MapReduce job
         Job job = Job.getInstance(conf, "FailedByDistrict_" + year + "_" + quarter);
         job.setJarByClass(FailedTransactionByDistrictJob.class);
         job.setMapperClass(FailedTransactionByDistrictJob.FailedMapper.class);
@@ -80,22 +87,23 @@ public class FailedByDistrictService {
         job.setMapOutputValueClass(IntWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
-        FileInputFormat.addInputPath(job, inputPath);
+        FileInputFormat.addInputPath(job, new Path(inputGlob));
         FileOutputFormat.setOutputPath(job, out);
 
-        log.info("Chạy FailedByDistrict job: year={} quarter={} inputFiles={}",
-                year, quarter, inputFiles.length);
-
+        log.info("Chạy FailedByDistrict: year={} quarter={}", year, quarter);
         if (!job.waitForCompletion(true))
             throw new RuntimeException("MapReduce job thất bại");
 
         return parseAndSort(fs, out);
     }
 
-    // ── Parse output: "district|TOTAL \t count" và "district|FAILED \t count" ──
     private List<DistrictRiskDTO> parseAndSort(FileSystem fs, Path outDir) throws Exception {
-        Map<String, Integer> totalMap  = new HashMap<>();
-        Map<String, Integer> failedMap = new HashMap<>();
+        Map<String, Integer> totalMap       = new HashMap<>();
+        Map<String, Integer> failedMap      = new HashMap<>();
+        Map<String, Integer> reversedMap    = new HashMap<>();
+        Map<String, Integer> largeAmountMap = new HashMap<>();
+        Map<String, Integer> rapidFireMap   = new HashMap<>();
+        Map<String, Integer> fanOutMap      = new HashMap<>();
 
         for (FileStatus status : fs.listStatus(outDir)) {
             if (!status.getPath().getName().startsWith("part-")) continue;
@@ -105,7 +113,6 @@ public class FailedByDistrictService {
 
                 String line;
                 while ((line = r.readLine()) != null) {
-                    // Format: "Quận 3|TOTAL \t 120"
                     String[] parts = line.split("\t");
                     if (parts.length < 2) continue;
 
@@ -114,37 +121,76 @@ public class FailedByDistrictService {
 
                     String district = kp[0].trim();
                     String type     = kp[1].trim();
-
                     int count;
-                    try {
-                        count = Integer.parseInt(parts[1].trim());
-                    } catch (NumberFormatException e) {
-                        log.warn("Không parse được count từ dòng: {}", line);
-                        continue;
-                    }
+                    try { count = Integer.parseInt(parts[1].trim()); }
+                    catch (NumberFormatException e) { continue; }
 
-                    if ("TOTAL".equals(type))  totalMap.merge(district,  count, Integer::sum);
-                    if ("FAILED".equals(type)) failedMap.merge(district, count, Integer::sum);
+                    if ("TOTAL".equals(type)) {
+                        totalMap.merge(district, count, Integer::sum);
+                    } else if ("FAILED".equals(type)) {
+                        failedMap.merge(district, count, Integer::sum);
+                    } else if ("REVERSED".equals(type)) {
+                        reversedMap.merge(district, count, Integer::sum);
+                    } else if ("LARGE_AMOUNT".equals(type)) {
+                        largeAmountMap.merge(district, count, Integer::sum);
+                    } else if ("RAPID_FIRE".equals(type)) {
+                        rapidFireMap.merge(district, count, Integer::sum);
+                    } else if ("FAN_OUT".equals(type)) {
+                        fanOutMap.merge(district, count, Integer::sum);
+                    }
                 }
             }
         }
 
-        // Tính failRate và tạo DTO
         List<DistrictRiskDTO> result = new ArrayList<>();
         for (Map.Entry<String, Integer> e : totalMap.entrySet()) {
-            String d      = e.getKey();
-            int    total  = e.getValue();
-            int    failed = failedMap.getOrDefault(d, 0);
-            // Round 2 chữ số thập phân
-            double rate = total > 0
-                    ? Math.round(failed * 10000.0 / total) / 100.0
-                    : 0.0;
-            result.add(new DistrictRiskDTO(d, total, failed, rate));
+            String d           = e.getKey();
+            int    total       = e.getValue();
+            int    failed      = failedMap.getOrDefault(d, 0);
+            int    reversed    = reversedMap.getOrDefault(d, 0);
+            int    largeAmount = largeAmountMap.getOrDefault(d, 0);
+            int    rapidFire   = rapidFireMap.getOrDefault(d, 0);
+            int    fanOut      = fanOutMap.getOrDefault(d, 0);
+
+            double failRate    = total > 0 ? Math.round(failed   * 10000.0 / total) / 100.0 : 0.0;
+            double reversalRate= total > 0 ? Math.round(reversed * 10000.0 / total) / 100.0 : 0.0;
+
+            // ── Phân loại mức độ rủi ro tổng hợp ─────────────────────────
+            // CAO:        failRate >= 20% | reversalRate >= 15% | rapidFire > 0
+            //             | fanOut >= 5  | largeAmount > 0 (nhiều GD >= 500tr/giờ)
+            // TRUNG_BINH: failRate >= 10% | reversalRate >= 5%
+            //             | largeAmount >= 2 | fanOut >= 2
+            // THAP:       còn lại
+            String riskLevel;
+            if (failRate >= 20 || reversalRate >= 15
+                    || rapidFire > 0 || fanOut >= 5 || largeAmount > 0) {
+                riskLevel = "CAO";
+            } else if (failRate >= 10 || reversalRate >= 5
+                    || largeAmount >= 2 || fanOut >= 2) {
+                riskLevel = "TRUNG_BINH";
+            } else {
+                riskLevel = "THAP";
+            }
+
+            result.add(new DistrictRiskDTO(
+                    d, total, failed, reversed,
+                    largeAmount, rapidFire, fanOut,
+                    failRate, reversalRate, riskLevel));
         }
 
-        // Sort: failRate cao nhất lên đầu
-        result.sort(Comparator.comparingDouble(DistrictRiskDTO::failRate).reversed());
+        // Sort: CAO → TRUNG_BINH → THAP, cùng level thì theo failRate
+        result.sort(Comparator
+                .<DistrictRiskDTO, Integer>comparing(dto -> riskScore(dto.riskLevel()))
+                .reversed()
+                .thenComparing(Comparator.comparingDouble(DistrictRiskDTO::failRate).reversed()));
+
         log.info("FailedByDistrict kết quả: {} district", result.size());
         return result;
+    }
+
+    private int riskScore(String level) {
+        if ("CAO".equals(level))        return 3;
+        if ("TRUNG_BINH".equals(level)) return 2;
+        return 1;
     }
 }
