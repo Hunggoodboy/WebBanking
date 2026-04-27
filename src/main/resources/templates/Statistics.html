@@ -164,8 +164,14 @@
 
     async function fetchStatistics() {
         const groupBy = document.getElementById('groupBySelect').value;
+        const token = localStorage.getItem("token");
         try {
-            const response = await fetch(`/api/reports/my-transactions/statistics?groupBy=${groupBy}`);
+            const response = await fetch(`/api/reports/my-transactions/statistics?groupBy=${groupBy}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
             const data = await response.json();
             if (data.code === 200) {
                 renderChart(data.data.points);
@@ -222,8 +228,14 @@
     }
 
     async function fetchHistory() {
+        const token = localStorage.getItem("token");
         try {
-            const response = await fetch(`/api/reports/my-transactions?page=0&size=10`);
+            const response = await fetch(`/api/reports/my-transactions?page=0&size=10`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
             const data = await response.json();
             if (data.code === 200) {
                 renderHistoryTable(data.data.items);
