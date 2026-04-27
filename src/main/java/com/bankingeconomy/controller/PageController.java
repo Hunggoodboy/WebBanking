@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class PageController {
-
     @GetMapping("/login")
     public String login() {
         return "Login";
@@ -20,7 +19,6 @@ public class PageController {
     public String historyTransfer() {
         return "historyTransfer";
     }
-
     @GetMapping({"/", "/dashboard"})
     public String home() {
         return "Dashboard";
@@ -67,4 +65,6 @@ public class PageController {
     public String maxProvinceFlow() {
         return "max-province-flow";
     }
+    @GetMapping("/admin/top-vip-customers")
+    public String topVipCustomers() {return "TopVipCustomers";}
 }

@@ -52,6 +52,7 @@ public class SecurityConfig {
             "/admin/district-risk",
             "/admin/top-transfer-time",
             "/admin/max-province-flow",
+            "/admin/top-vip-customers",
             "/transfer",
             "/beneficiaries",
             "/profile",
