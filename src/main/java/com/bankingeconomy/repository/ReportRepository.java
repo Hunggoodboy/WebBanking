@@ -116,5 +116,25 @@ Object[] getMonthlySummary(
         @Param("start") LocalDateTime start,
         @Param("end") LocalDateTime end
 );
+    @Query("""
+    SELECT 
+        FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m'),
+        SUM(CASE WHEN tu.email = :email THEN t.amount ELSE 0 END),
+        SUM(CASE WHEN fu.email = :email THEN t.amount ELSE 0 END)
+    FROM Transaction t
+    LEFT JOIN t.fromAccount fa
+    LEFT JOIN fa.user fu
+    LEFT JOIN t.toAccount ta
+    LEFT JOIN ta.user tu
+    WHERE (fu.email = :email OR tu.email = :email)
+    AND t.createdAt BETWEEN :start AND :end
+    GROUP BY FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m')
+""")
+List<Object[]> getMonthlyReportRange(
+        @Param("email") String email,
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end
+);
 }
 

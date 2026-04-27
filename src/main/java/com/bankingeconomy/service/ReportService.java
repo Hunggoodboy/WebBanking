@@ -17,4 +17,5 @@ public interface ReportService {
     AdminTopTransferTimeResponse getAdminTopTransferTimeStatistics(String month, boolean rerunJob);
     List<TopCustomerResponse> getTop5PercentVipCustomers(int year);
     MonthlyReportResponse getMonthlyReport(String email, YearMonth month);
+    List<MonthlyReportItemResponse> getMonthlyReportRange(String email,LocalDateTime start,LocalDateTime end);
 }
