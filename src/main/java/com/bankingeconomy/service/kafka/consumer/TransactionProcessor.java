@@ -16,8 +16,8 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class TransactionProcessor {
 
-    private final TransactionProcessorService transactionProcessorService;
     private final HdfsKafkaProducer  hdfsKafkaProducer;
+    private final TransactionProcessorService transactionProcessorService;
 
     @KafkaListener(topics = "transfer-topic", groupId = "transaction-group")
     public void consume(TransferEvent event) {
@@ -26,6 +26,7 @@ public class TransactionProcessor {
         log.info("Send to Kafka Producer for write to HDFS: txId={}", event.getTransactionId());
         try {
             transactionProcessorService.processTransaction(event);
+            log.info("Send to Kafka Producer for write to HDFS: txId={}", event.getTransactionId());
             HdfsTransactionDTO hdfsTransactionDTO = HdfsTransactionDTO.convertFromTransferEvent(event);
             hdfsKafkaProducer.pushBatchToKafka(Collections.singletonList(hdfsTransactionDTO));
         } catch (Exception e) {

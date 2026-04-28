@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     // Cập nhật status giao dịch — dùng trong Kafka consumer sau khi xử lý
     @Modifying
+    @Transactional
     @Query("UPDATE Transaction t SET t.status = :status WHERE t.id = :id")
     void updateStatus(@Param("id") UUID id, @Param("status") String status);
 
@@ -39,4 +41,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             "join t.fromAccount fromAcc " +
             "join t.toAccount toAcc ")
     List<HdfsTransactionDTO> findAllTransactions();
+
+    @Modifying
+    @Transactional
+    @Query(value = "INSERT INTO transactions (id, amount, description, status, created_at, to_account_id, from_account_id) " +
+            "VALUES (:id, :amount, :description, :status, :createdAt, :toAccountId, :fromAccountId)", nativeQuery = true)
+    void insertTransactionCopy(UUID id, double amount, String description, String status,
+                               LocalDateTime createdAt, UUID toAccountId, UUID fromAccountId);
 }

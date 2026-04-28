@@ -1,5 +1,7 @@
 package com.bankingeconomy.service.Impl;
 
+import com.bankingeconomy.config.database.DbContextHolder;
+import com.bankingeconomy.config.database.DbType;
 import com.bankingeconomy.dto.request.ProfileUpdateRequest;
 import com.bankingeconomy.dto.request.RegisterRequest;
 import com.bankingeconomy.dto.response.RegisterResponse;
@@ -11,6 +13,7 @@ import com.bankingeconomy.exception.ErrorCode;
 import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.UserService;
+import com.bankingeconomy.utils.RegionUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -59,8 +62,11 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         try {
+            DbType dbType = RegionUtil.getRegionByProvince(normalizedRequest.getProvince());
+            DbContextHolder.setCurrentDb(dbType);
             userRepository.saveAndFlush(user);
             Account account = createPrimaryAccount(user);
+            DbContextHolder.clear();
             return buildRegisterResponse(user, account);
         } catch (RuntimeException ex) {
             throw resolveRegisterException(ex);

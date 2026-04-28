@@ -22,8 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
-
+import com.bankingeconomy.config.database.DbContextHolder;
+import com.bankingeconomy.config.database.DbType;
 /**
  * Service đọc/ghi dữ liệu giao dịch lên HDFS theo thiết kế phân mảnh ngang.
  *
@@ -61,14 +61,49 @@ public class HDFSReadWriteServiceImpl implements HDFSReadWriteService {
 
     private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyy-MM");
 
-    public ResponseData<?> excuteWriteToHdfs(){
-        List<HdfsTransactionDTO> transactions = transactionRepository.findAllTransactions();
-        kafkaProducer.pushBatchToKafka(transactions);
+
+    public ResponseData<?> excuteWriteToHdfs() {
+        // DÙNG MAP ĐỂ KHỬ TRÙNG LẶP DỮ LIỆU (Key là ID giao dịch)
+        Map<String, HdfsTransactionDTO> uniqueTransactions = new HashMap<>();
+
+        // Danh sách 3 trạm cần hút dữ liệu
+        DbType[] regions = {DbType.NORTH, DbType.MID, DbType.SOUTH};
+
+        for (DbType region : regions) {
+            // Cắm cờ để hút dữ liệu từng trạm
+            DbContextHolder.setCurrentDb(region);
+            try {
+                List<HdfsTransactionDTO> regionTransactions = transactionRepository.findAllTransactions();
+
+                if (regionTransactions != null && !regionTransactions.isEmpty()) {
+                    // Duyệt qua từng giao dịch và nhét vào Map
+                    for (HdfsTransactionDTO dto : regionTransactions) {
+                        // Giả sử DTO của bạn có hàm getTransactionId() hoặc getId()
+                        // Map sẽ tự động gạt bỏ các giao dịch bị trùng ID
+                        uniqueTransactions.put(String.valueOf(dto.getTransactionId()), dto);
+                    }
+                    log.info("✅ Đã kéo thành công {} giao dịch từ trạm {}", regionTransactions.size(), region);
+                }
+            } catch (Exception e) {
+                log.error("❌ Lỗi khi kéo dữ liệu từ trạm {}: {}", region, e.getMessage());
+            } finally {
+                DbContextHolder.clear();
+            }
+        }
+
+        // Chuyển lại Map thành List để bơm vào Kafka
+        List<HdfsTransactionDTO> allTransactions = new ArrayList<>(uniqueTransactions.values());
+
+        // Bơm toàn bộ dữ liệu gom được lên Kafka
+        if (!allTransactions.isEmpty()) {
+            kafkaProducer.pushBatchToKafka(allTransactions);
+        }
+
         return ResponseData.builder()
-                .status(HttpStatus.OK.value())
-                .message("Đã đẩy batch giao dịch xuống Kafka để ghi vào HDFS")
-                .data(transactions.size())
-                .build();
+                           .status(HttpStatus.OK.value())
+                           .message("Đã đẩy tổng cộng " + allTransactions.size() + " giao dịch (đã khử trùng) từ 3 miền xuống Kafka để ghi HDFS")
+                           .data(allTransactions.size())
+                           .build();
     }
 
     // ================================================================

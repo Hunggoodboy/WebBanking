@@ -1,5 +1,7 @@
 package com.bankingeconomy.service.Impl;
 
+import com.bankingeconomy.config.database.DbContextHolder;
+import com.bankingeconomy.config.database.DbType;
 import com.bankingeconomy.dto.request.AccountRequest;
 import com.bankingeconomy.dto.response.AccountLookupResponse;
 import com.bankingeconomy.dto.response.AccountSummaryResponse;
@@ -13,6 +15,7 @@ import com.bankingeconomy.repository.AccountRepository;
 import com.bankingeconomy.repository.UserRepository;
 import com.bankingeconomy.service.AccountService;
 import com.bankingeconomy.service.BalanceCacheService;
+import com.bankingeconomy.utils.RegionUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -172,6 +175,8 @@ public class AccountServiceImpl implements AccountService {
     }
     @Override
     public ResponseData<?> createAccount(User user, AccountRequest request){
+        DbType dbType = RegionUtil.getRegionByProvince(user.getProvince());
+        DbContextHolder.setCurrentDb(dbType);
         String accountNumber = request != null && request.getAccountNumber() != null
                 ? request.getAccountNumber().trim()
                 : "";
@@ -204,6 +209,7 @@ public class AccountServiceImpl implements AccountService {
                 .createdAt(new java.util.Date())
                 .build();
         accountRepository.save(account);
+        DbContextHolder.clear();
         return ResponseData.builder()
                 .status(201)
                 .message("Account created successfully")
@@ -213,32 +219,45 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public List<AccountSummaryResponse> getMyAccounts(User user) {
-        List<Account> accounts = accountRepository.findAll().stream()
-                .filter(account -> account.getUser() != null && account.getUser().getId().equals(user.getId()))
-                .sorted(Comparator.comparing(Account::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .toList();
+        // 1. Xác định trạm của người dùng dựa trên tỉnh/thành
+        DbType targetDb = RegionUtil.getRegionByProvince(user.getProvince());
 
-        return java.util.stream.IntStream.range(0, accounts.size())
-                .mapToObj(index -> {
-                    Account account = accounts.get(index);
-                    boolean primary = index == 0;
-                    Double cachedBalance = balanceCacheService.getCachedBalance(account.getId());
-                    double balance = cachedBalance != null ? cachedBalance : account.getBalance();
+        // 2. Cắm cờ để đọc đúng trạm địa phương
+        DbContextHolder.setCurrentDb(targetDb);
+        log.info("==== 🔍 DASHBOARD: Đang đọc danh sách tài khoản từ trạm: {} ====", targetDb);
 
-                    if (cachedBalance == null) {
-                        balanceCacheService.cacheBalance(account.getId(), balance);
-                    }
+        try {
+            // Chỉ lấy tài khoản thuộc về user hiện tại bằng query thay vì findAll() để tối ưu
+            List<Account> accounts = accountRepository.findAll().stream()
+                                                      .filter(account -> account.getUser() != null && account.getUser().getId().equals(user.getId()))
+                                                      .sorted(Comparator.comparing(Account::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                                                      .toList();
 
-                    return AccountSummaryResponse.builder()
-                            .id(account.getId())
-                            .accountNumber(account.getAccountNumber())
-                            .balance(balance)
-                            .status(account.getStatus() != null ? account.getStatus().name() : "")
-                            .name(primary ? "Tài khoản thanh toán" : "Tài khoản phụ")
-                            .primary(primary)
-                            .build();
-                })
-                .toList();
+            return java.util.stream.IntStream.range(0, accounts.size())
+                         .mapToObj(index -> {
+                             Account account = accounts.get(index);
+                             boolean primary = index == 0;
+                             Double cachedBalance = balanceCacheService.getCachedBalance(account.getId());
+                             double balance = cachedBalance != null ? cachedBalance : account.getBalance();
+
+                             if (cachedBalance == null) {
+                                 balanceCacheService.cacheBalance(account.getId(), balance);
+                             }
+
+                             return AccountSummaryResponse.builder()
+                                                          .id(account.getId())
+                                                          .accountNumber(account.getAccountNumber())
+                                                          .balance(balance)
+                                                          .status(account.getStatus() != null ? account.getStatus().name() : "")
+                                                          .name(primary ? "Tài khoản thanh toán" : "Tài khoản phụ")
+                                                          .primary(primary)
+                                                          .build();
+                         })
+                         .toList();
+        } finally {
+            // 3. Rút cờ trả lại kết nối
+            DbContextHolder.clear();
+        }
     }
 
     @Override
