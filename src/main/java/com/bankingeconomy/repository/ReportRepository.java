@@ -20,8 +20,8 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
             LEFT JOIN t.toAccount ta
             LEFT JOIN ta.user tu
             WHERE (fu.id = :userId OR tu.id = :userId)
-              AND (:start IS NULL OR t.createdAt >= :start)
-              AND (:end IS NULL OR t.createdAt <= :end)
+              AND t.createdAt >= :start
+              AND t.createdAt <= :end
             """)
     Page<Transaction> findMyTransactionHistory(UUID userId,
                                                LocalDateTime start,
@@ -35,8 +35,8 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
             LEFT JOIN t.toAccount ta
             LEFT JOIN ta.user tu
             WHERE (fu.id = :userId OR tu.id = :userId)
-              AND (:start IS NULL OR t.createdAt >= :start)
-              AND (:end IS NULL OR t.createdAt <= :end)
+              AND t.createdAt >= :start
+              AND t.createdAt <= :end
             ORDER BY t.createdAt ASC
             """)
     List<Transaction> findTransactionsForUserStatistics(UUID userId,
@@ -45,8 +45,8 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
 
     @Query("""
             SELECT t FROM Transaction t
-            WHERE (:start IS NULL OR t.createdAt >= :start)
-              AND (:end IS NULL OR t.createdAt <= :end)
+            WHERE t.createdAt >= :start
+              AND t.createdAt <= :end
             ORDER BY t.createdAt ASC
             """)
     List<Transaction> findTransactionsForAdminStatistics(LocalDateTime start,

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EBank - Thống Kê</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 font-sans text-gray-800">
@@ -67,9 +68,9 @@
                     </li>
 
                     <li>
-                        <button onclick="showTab('tab-province-density')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
-                            <span class="text-xl">🗺️</span>
-                            Mật độ theo tỉnh
+                        <button onclick="showTab('tab-category')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
+                            <span class="text-xl">📊</span>
+                            Phân loại chi tiêu
                         </button>
                     </li>
                 </ul>
@@ -85,10 +86,10 @@
                             <h2 class="text-2xl font-bold text-slate-800">Lịch sử chuyển tiền</h2>
                             <p class="text-sm text-gray-500 mt-1">Thống kê theo tháng, quý, năm của bạn</p>
                         </div>
-                        <select class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
-                            <option>Tháng 4/2026</option>
-                            <option>Quý 1/2026</option>
-                            <option>Năm 2026</option>
+                        <select id="groupBySelect" onchange="fetchStatistics()" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
+                            <option value="month">Theo tháng</option>
+                            <option value="quarter">Theo quý</option>
+                            <option value="year">Theo năm</option>
                         </select>
                     </div>
 
@@ -220,6 +221,74 @@
         // Hiện tab được chọn
         document.getElementById(tabId).classList.remove('hidden');
         document.getElementById(tabId).classList.add('block');
+    }
+
+    let chartInstance = null;
+
+    async function fetchStatistics() {
+        const groupBy = document.getElementById('groupBySelect').value;
+        const token = localStorage.getItem("token");
+        try {
+            const response = await fetch(`/api/reports/my-transactions/statistics?groupBy=${groupBy}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.code === 200) {
+                renderChart(data.data.points);
+            }
+        } catch (error) {
+            console.error("Error fetching statistics:", error);
+        }
+    }
+
+    function renderChart(points) {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        const labels = points.map(p => p.label);
+        const dataIn = points.map(p => p.totalIn);
+        const dataOut = points.map(p => p.totalOut);
+
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Tiền vào',
+                        data: dataIn,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Tiền ra',
+                        data: dataOut,
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
 
         // Xử lý đổi màu nút active ở menu bên trái
         const sidebar = document.querySelector('.sticky');
@@ -237,6 +306,58 @@
             });
         }
     }
+    async function fetchHistory() {
+        const token = localStorage.getItem("token");
+        try {
+            const response = await fetch(`/api/reports/my-transactions?page=0&size=10`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.code === 200) {
+                renderHistoryTable(data.data.items);
+            }
+        } catch (error) {
+            console.error("Error fetching history:", error);
+        }
+    }
+
+    function renderHistoryTable(items) {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+        items.forEach(item => {
+            const date = new Date(item.createdAt).toLocaleDateString('vi-VN');
+            const amountStr = item.amount.toLocaleString('vi-VN') + 'đ';
+            let amountHtml = '';
+            let desc = item.description || 'Giao dịch';
+
+            if (item.direction === 'IN') {
+                amountHtml = `<span class="text-emerald-500 font-bold">+${amountStr}</span>`;
+                desc = `Nhận từ ${item.counterpartyAccount || 'Không rõ'}`;
+            } else if (item.direction === 'OUT') {
+                amountHtml = `<span class="text-red-500 font-bold">-${amountStr}</span>`;
+                desc = `Chuyển đến ${item.counterpartyAccount || 'Không rõ'}`;
+            } else {
+                amountHtml = `<span class="text-gray-500 font-bold">${amountStr}</span>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition';
+            tr.innerHTML = `
+                <td class="py-3 px-4">${date}</td>
+                <td class="py-3 px-4 font-medium">${desc}</td>
+                <td class="py-3 px-4 text-right">${amountHtml}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchStatistics();
+        fetchHistory();
+    });
 </script>
 <script src="/js/statistics.js"></script>
 </body>

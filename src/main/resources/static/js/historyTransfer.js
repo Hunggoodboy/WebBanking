@@ -563,6 +563,22 @@ function buildDateRangeByType(startValue, endValue, type) {
     };
   }
 
+  if (type === "quarter") {
+    const [startQ, startYear] = startValue.split("-").map(Number);
+    const [endQ, endYear] = endValue.split("-").map(Number);
+
+    const startMonth = (startQ - 1) * 3 + 1;
+    const endMonth = endQ * 3;
+
+    const startDate = new Date(startYear, startMonth - 1, 1, 0, 0, 0, 0);
+    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59, 0);
+
+    return {
+      start: formatDateTimeLocal(startDate, false),
+      end: formatDateTimeLocal(endDate, true),
+    };
+  }
+
   return {
     start: `${startValue}-01-01T00:00:00`,
     end: `${endValue}-12-31T23:59:59`,
@@ -645,6 +661,13 @@ function updateInputMode() {
     endValue.type = "month";
   }
 
+  if (type === "quarter") {
+    startValue.type = "text";
+    endValue.type = "text";
+    startValue.placeholder = "Ví dụ: 1-2026 (Quý 1)";
+    endValue.placeholder = "Ví dụ: 4-2026 (Quý 4)";
+  }
+
   if (type === "year") {
     startValue.type = "number";
     endValue.type = "number";
@@ -673,6 +696,17 @@ function normalizeValueByType(value, type, isEnd) {
       ? new Date(year, month, 0, 23, 59, 59, 999)
       : new Date(year, month - 1, 1, 0, 0, 0, 0);
     return date.getTime();
+  }
+
+  if (type === "quarter") {
+    const [q, year] = value.split("-").map(Number);
+    if (isEnd) {
+      const endMonth = q * 3;
+      return new Date(year, endMonth, 0, 23, 59, 59, 999).getTime();
+    } else {
+      const startMonth = (q - 1) * 3 + 1;
+      return new Date(year, startMonth - 1, 1, 0, 0, 0, 0).getTime();
+    }
   }
 
   const year = Number(value);
@@ -734,7 +768,7 @@ async function loadStatistics(filters = historyState.filters) {
 
 function deriveStatisticsGroupBy() {
   const filterType = document.getElementById("filterType")?.value || "day";
-  if (filterType === "month" || filterType === "year") {
+  if (filterType === "month" || filterType === "quarter" || filterType === "year") {
     return filterType;
   }
   return "day";
@@ -848,7 +882,10 @@ function renderStatisticsCharts(points) {
 
 function buildStatisticsNote(groupBy, filters, summary) {
   const normalizedGroupBy = String(groupBy || "day").toLowerCase();
-  const groupText = normalizedGroupBy === "month" ? "theo tháng" : normalizedGroupBy === "year" ? "theo năm" : "theo ngày";
+  let groupText = "theo ngày";
+  if (normalizedGroupBy === "month") groupText = "theo tháng";
+  else if (normalizedGroupBy === "quarter") groupText = "theo quý";
+  else if (normalizedGroupBy === "year") groupText = "theo năm";
   const totalTransactions = Number(summary?.totalTransactions || 0);
   const hasRange = filters?.start && filters?.end;
   if (!hasRange) {

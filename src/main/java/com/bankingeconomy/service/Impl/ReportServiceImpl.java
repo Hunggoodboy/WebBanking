@@ -61,7 +61,10 @@ public class ReportServiceImpl implements ReportService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        return reportRepository.findMyTransactionHistory(user.getId(), start, end, pageable)
+        LocalDateTime safeStart = start != null ? start : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime safeEnd = end != null ? end : LocalDateTime.of(2100, 12, 31, 23, 59, 59);
+
+        return reportRepository.findMyTransactionHistory(user.getId(), safeStart, safeEnd, pageable)
                 .map(transaction -> mapToHistoryItem(transaction, user.getId()));
     }
 
@@ -77,17 +80,23 @@ public class ReportServiceImpl implements ReportService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        List<Transaction> transactions = reportRepository.findTransactionsForUserStatistics(user.getId(), start, end);
+        LocalDateTime safeStart = start != null ? start : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime safeEnd = end != null ? end : LocalDateTime.of(2100, 12, 31, 23, 59, 59);
+
+        List<Transaction> transactions = reportRepository.findTransactionsForUserStatistics(user.getId(), safeStart, safeEnd);
         return buildStatisticsResponse(transactions, normalizeGroupBy(groupBy), user.getId(), "DATABASE");
     }
 
     @Override
     public TransactionStatisticsResponse getAdminDashboardStatistics(LocalDateTime start, LocalDateTime end, String groupBy) {
-        List<Transaction> transactions = reportRepository.findTransactionsForAdminStatistics(start, end);
+        LocalDateTime safeStart = start != null ? start : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime safeEnd = end != null ? end : LocalDateTime.of(2100, 12, 31, 23, 59, 59);
+
+        List<Transaction> transactions = reportRepository.findTransactionsForAdminStatistics(safeStart, safeEnd);
         String normalizedGroupBy = normalizeGroupBy(groupBy);
 
         TransactionStatisticsResponse response = buildStatisticsResponse(transactions, normalizedGroupBy, null, "DATABASE");
-        List<AccountTransferPointResponse> topAccounts = readMapReduceTopAccounts(start, end);
+        List<AccountTransferPointResponse> topAccounts = readMapReduceTopAccounts(safeStart, safeEnd);
         response.setMapReduceTopAccounts(topAccounts);
         response.setSource(topAccounts.isEmpty() ? "DATABASE_ONLY" : "DATABASE_AND_MAPREDUCE");
         return response;
@@ -567,7 +576,7 @@ public class ReportServiceImpl implements ReportService {
 
     private String normalizeGroupBy(String groupBy) {
         String normalized = String.valueOf(groupBy).trim().toLowerCase(Locale.ROOT);
-        if ("month".equals(normalized) || "year".equals(normalized)) {
+        if ("month".equals(normalized) || "quarter".equals(normalized) || "year".equals(normalized)) {
             return normalized;
         }
         return "day";
@@ -584,6 +593,10 @@ public class ReportServiceImpl implements ReportService {
         }
         if ("month".equals(groupBy)) {
             return createdAt.format(MONTH_FORMAT);
+        }
+        if ("quarter".equals(groupBy)) {
+            int quarter = (createdAt.getMonthValue() - 1) / 3 + 1;
+            return "Q" + quarter + "/" + createdAt.getYear();
         }
         if ("year".equals(groupBy)) {
             return createdAt.format(YEAR_FORMAT);
