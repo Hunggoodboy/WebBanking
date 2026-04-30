@@ -69,7 +69,7 @@ public class ProvinceDensityServiceImpl implements ProvinceDensityService {
         FileInputFormat.addInputPath(job, inputPath);
         FileOutputFormat.setOutputPath(job, outPath);
 
-        log.info("=== BẮT ĐẦU CHẠY MAPREDUCE JOB (DÀNH CHO GIÁO VIÊN) ===");
+        log.info("=== BẮT ĐẦU CHẠY MAPREDUCE JOB  ===");
         if (!job.waitForCompletion(true)) {
             throw new RuntimeException("MapReduce Job failed!");
         }

@@ -14,12 +14,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   bindAdminDashboardActions();
   applyAdminDefaultRange();
+  populateProvinceDensityYears();
   loadAdminDashboard();
 });
 
+function populateProvinceDensityYears() {
+  const yearSelect = document.getElementById("provinceDensityYear");
+  if (!yearSelect) return;
+  const currentYear = new Date().getFullYear();
+  yearSelect.innerHTML = "";
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    const option = document.createElement("option");
+    option.value = y;
+    option.textContent = y;
+    if (y === currentYear) option.selected = true;
+    yearSelect.appendChild(option);
+  }
+}
+
 function bindAdminDashboardActions() {
-  document.getElementById("adminApplyFilterBtn")?.addEventListener("click", loadAdminDashboard);
-  document.getElementById("adminResetFilterBtn")?.addEventListener("click", () => {
+  document.getElementById("applyFilterBtn")?.addEventListener("click", loadAdminDashboard);
+  document.getElementById("resetFilterBtn")?.addEventListener("click", () => {
     applyAdminDefaultRange();
     loadAdminDashboard();
   });
@@ -28,15 +43,18 @@ function bindAdminDashboardActions() {
 function applyAdminDefaultRange() {
   const today = new Date();
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  document.getElementById("adminGroupBy").value = "day";
-  document.getElementById("adminStartDate").value = formatDateInput(firstDayOfMonth);
-  document.getElementById("adminEndDate").value = formatDateInput(today);
+  const groupBy = document.getElementById("filterType");
+  if (groupBy) groupBy.value = "day";
+  const start = document.getElementById("startValue");
+  if (start) start.value = formatDateInput(firstDayOfMonth);
+  const end = document.getElementById("endValue");
+  if (end) end.value = formatDateInput(today);
 }
 
 async function loadAdminDashboard() {
-  const startDate = document.getElementById("adminStartDate")?.value || "";
-  const endDate = document.getElementById("adminEndDate")?.value || "";
-  const groupBy = document.getElementById("adminGroupBy")?.value || "day";
+  const startDate = document.getElementById("startValue")?.value || "";
+  const endDate = document.getElementById("endValue")?.value || "";
+  const groupBy = document.getElementById("filterType")?.value || "day";
 
   if ((startDate && !endDate) || (!startDate && endDate)) {
     setAdminMessage("Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc.", true);
@@ -81,10 +99,10 @@ async function loadAdminDashboard() {
 
 function renderAdminSummary(summary) {
   const safeSummary = summary || {};
-  setElementText("adminTotalTransactions", String(Number(safeSummary.totalTransactions || 0)));
-  setElementText("adminTotalAmount", formatCurrency(safeSummary.totalAmount || 0));
-  setElementText("adminSuccessCount", String(Number(safeSummary.successCount || 0)));
-  setElementText("adminPendingCount", String(Number(safeSummary.pendingCount || 0)));
+  setElementText("totalCount", String(Number(safeSummary.totalTransactions || 0)));
+  setElementText("amountTotal", formatCurrency(safeSummary.totalAmount || 0));
+  setElementText("successCount", String(Number(safeSummary.successCount || 0)));
+  setElementText("pendingCount", String(Number(safeSummary.pendingCount || 0)));
 }
 
 function renderAdminCharts(response) {
@@ -96,7 +114,7 @@ function renderAdminCharts(response) {
   const transactionCounts = points.map((item) => Number(item.totalTransactions || 0));
   const amountTotals = points.map((item) => Number(item.totalAmount || 0));
 
-  renderOrReplaceChart("adminTransactionChart", "line", {
+  renderOrReplaceChart("statisticsCountChart", "line", {
     labels,
     datasets: [{
       label: "Số giao dịch",
@@ -111,7 +129,7 @@ function renderAdminCharts(response) {
     scales: { y: { beginAtZero: true } },
   }, (chart) => { adminTransactionChart = chart; }, adminTransactionChart);
 
-  renderOrReplaceChart("adminAmountChart", "bar", {
+  renderOrReplaceChart("statisticsAmountChart", "bar", {
     labels,
     datasets: [{
       label: "Tổng giá trị giao dịch",
@@ -229,5 +247,155 @@ async function parseJsonSafe(response) {
     return text ? JSON.parse(text) : {};
   } catch {
     return { error: text || "Phản hồi từ server không hợp lệ." };
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+// ================================================================
+// MẬT ĐỘ GIAO DỊCH THEO TỈNH
+// ================================================================
+
+const PROVINCE_DENSITY_API = `${window.location.origin}/api/hadoop/province-density`;
+
+async function loadProvinceDensity() {
+  const yearEl    = document.getElementById("provinceDensityYear");
+  const quarterEl = document.getElementById("provinceDensityQuarter");
+  const year      = yearEl    ? yearEl.value    : "2026";
+  const quarter   = quarterEl ? quarterEl.value : "Q1";
+
+  toggleProvinceDensityState("loading");
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch(
+      `${PROVINCE_DENSITY_API}?year=${encodeURIComponent(year)}&quarter=${encodeURIComponent(quarter)}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return;
+    }
+
+    const payload = await parseJsonSafe(response);
+
+    if (!response.ok) {
+      toggleProvinceDensityState("error", payload?.message || "Lỗi không xác định từ server.");
+      return;
+    }
+
+    const data = payload?.data || [];
+
+    if (!Array.isArray(data) || data.length === 0) {
+      toggleProvinceDensityState("empty");
+      return;
+    }
+
+    renderProvinceDensityTable(data);
+    toggleProvinceDensityState("results");
+  } catch (error) {
+    toggleProvinceDensityState("error", error.message || "Không thể kết nối tới server.");
+  }
+}
+
+function renderProvinceDensityTable(data) {
+  const tbody = document.getElementById("provinceDensityBody");
+  const countEl = document.getElementById("provinceDensityCount");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (countEl) {
+    countEl.textContent = data.length.toLocaleString("vi-VN");
+  }
+
+  const maxTx = data.length > 0 ? data[0].totalTransactions : 1;
+
+  data.forEach((item, index) => {
+    const rank   = item.rank || (index + 1);
+    const prov   = escapeHtml(item.province || "Không rõ");
+    const total  = item.totalTransactions || 0;
+    const pct    = maxTx > 0 ? Math.round((total / maxTx) * 100) : 0;
+
+    let rankBadge = "";
+    if (rank === 1) {
+      rankBadge = `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">🥇</span>`;
+    } else if (rank === 2) {
+      rankBadge = `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold text-sm">🥈</span>`;
+    } else if (rank === 3) {
+      rankBadge = `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold text-sm">🥉</span>`;
+    } else {
+      rankBadge = `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold text-sm">${rank}</span>`;
+    }
+
+    let barColor = "from-indigo-400 to-indigo-600";
+    if (rank === 1) barColor = "from-amber-400 to-amber-600";
+    else if (rank === 2) barColor = "from-slate-400 to-slate-500";
+    else if (rank === 3) barColor = "from-orange-400 to-orange-500";
+
+    const row = document.createElement("tr");
+    row.className = "border-b border-slate-100 hover:bg-slate-50 transition";
+    row.innerHTML = `
+      <td class="py-3 px-4">${rankBadge}</td>
+      <td class="py-3 px-4 font-medium text-slate-800">${prov}</td>
+      <td class="py-3 px-4 text-right font-bold text-indigo-600">${total.toLocaleString("vi-VN")}</td>
+      <td class="py-3 px-4">
+        <div class="flex items-center gap-2">
+          <div class="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div class="h-full bg-gradient-to-r ${barColor} rounded-full transition-all duration-700" style="width: ${pct}%"></div>
+          </div>
+          <span class="text-xs text-gray-500 w-10 text-right">${pct}%</span>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function toggleProvinceDensityState(state, errorMsg = "") {
+  const loadingEl  = document.getElementById("provinceDensityLoading");
+  const emptyEl    = document.getElementById("provinceDensityEmpty");
+  const errorEl    = document.getElementById("provinceDensityError");
+  const resultsEl  = document.getElementById("provinceDensityResults");
+  const errorMsgEl = document.getElementById("provinceDensityErrorMsg");
+
+  [loadingEl, emptyEl, errorEl, resultsEl].forEach(el => {
+    if (el) el.classList.add("hidden");
+  });
+
+  switch (state) {
+    case "loading":
+      if (loadingEl) loadingEl.classList.remove("hidden");
+      break;
+    case "empty":
+      if (emptyEl) emptyEl.classList.remove("hidden");
+      break;
+    case "error":
+      if (errorEl) errorEl.classList.remove("hidden");
+      if (errorMsgEl) errorMsgEl.textContent = errorMsg;
+      break;
+    case "results":
+      if (resultsEl) resultsEl.classList.remove("hidden");
+      break;
   }
 }

@@ -89,6 +89,12 @@
                             Cảnh báo rủi ro
                         </a>
                     </li>
+                    <li>
+                        <button onclick="showTab('tab-province-density')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
+                            <span class="text-xl">🗺️</span>
+                            Mật độ theo tỉnh
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -213,3 +219,122 @@
                                     <h2 class="table-title font-bold text-slate-800">Danh sách giao dịch</h2>
                                 </div>
                                 <div class="page-info text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full" id="pageInfo">0 giao dịch</div>
+                            </div>
+                            <div class="p-0">
+                                <table class="w-full text-left border-collapse" id="adminTransactionTable">
+                                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                        <tr>
+                                            <th class="py-3 px-4 font-semibold border-b border-slate-200">Thời gian</th>
+                                            <th class="py-3 px-4 font-semibold border-b border-slate-200">Mã GD</th>
+                                            <th class="py-3 px-4 font-semibold border-b border-slate-200">Loại</th>
+                                            <th class="py-3 px-4 font-semibold border-b border-slate-200 text-right">Số tiền</th>
+                                            <th class="py-3 px-4 font-semibold border-b border-slate-200 text-center">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-sm divide-y divide-slate-100" id="adminTransactionBody">
+                                        <!-- Rows render here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- Tab Mật độ giao dịch theo tỉnh -->
+                <div id="tab-province-density" class="tab-content hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Mật độ giao dịch theo tỉnh</h2>
+                            <p class="text-sm text-gray-500 mt-1">Gộp dữ liệu từ các mảnh province — xếp hạng từ cao đến thấp</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="provinceDensityYear" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
+                                <!-- Options populated by JS -->
+                            </select>
+                            <select id="provinceDensityQuarter" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
+                                <option value="Q1">Quý 1</option>
+                                <option value="Q2">Quý 2</option>
+                                <option value="Q3">Quý 3</option>
+                                <option value="Q4">Quý 4</option>
+                            </select>
+                            <button id="provinceDensityBtn" onclick="loadProvinceDensity()" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition shadow-md">
+                                Phân tích
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading state -->
+                    <div id="provinceDensityLoading" class="hidden flex flex-col items-center justify-center py-16">
+                        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                        <p class="text-sm text-gray-500 font-medium">Đang chạy MapReduce gộp dữ liệu từ các mảnh…</p>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div id="provinceDensityEmpty" class="hidden flex flex-col items-center justify-center py-16">
+                        <span class="text-5xl mb-4">📭</span>
+                        <p class="text-gray-500 font-medium">Chưa có dữ liệu. Hãy chọn năm/quý và nhấn "Phân tích".</p>
+                    </div>
+
+                    <!-- Error state -->
+                    <div id="provinceDensityError" class="hidden bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+                        <p class="text-red-600 text-sm font-medium" id="provinceDensityErrorMsg"></p>
+                    </div>
+
+                    <!-- Results table -->
+                    <div id="provinceDensityResults" class="hidden">
+                        <div class="mb-4 flex items-center gap-3">
+                            <span class="text-sm text-gray-500">Tổng số tỉnh/thành phố:</span>
+                            <span id="provinceDensityCount" class="text-sm font-bold text-indigo-600">0</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                <tr class="text-sm text-gray-500 border-b border-slate-200">
+                                    <th class="py-3 px-4 font-semibold w-16">Hạng</th>
+                                    <th class="py-3 px-4 font-semibold">Tỉnh / Thành phố</th>
+                                    <th class="py-3 px-4 font-semibold text-right w-40">Tổng giao dịch</th>
+                                    <th class="py-3 px-4 font-semibold w-48">Mật độ</th>
+                                </tr>
+                                </thead>
+                                <tbody id="provinceDensityBody" class="text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => {
+            el.classList.add('hidden');
+            el.classList.remove('block');
+        });
+        const targetTab = document.getElementById(tabId);
+        if (targetTab) {
+            targetTab.classList.remove('hidden');
+            targetTab.classList.add('block');
+        }
+
+        const sidebar = document.querySelector('.sticky');
+        if (sidebar) {
+            sidebar.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('bg-indigo-50', 'text-indigo-700');
+                btn.classList.add('text-gray-600');
+            });
+            sidebar.querySelectorAll('button').forEach(btn => {
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabId)) {
+                    btn.classList.add('bg-indigo-50', 'text-indigo-700');
+                    btn.classList.remove('text-gray-600');
+                }
+            });
+        }
+    }
+</script>
+<script src="/js/adminDashboard.js"></script>
+</body>
+</html>
