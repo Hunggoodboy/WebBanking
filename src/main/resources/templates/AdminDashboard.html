@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EBank - Thống Kê</title>
+    <title>EBank - Thống Kê Tổng Hợp</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,6 +13,7 @@
 <body class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 font-sans text-gray-800">
 <div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
 
+    <!-- HEADER -->
     <header class="mb-8">
         <div class="bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl rounded-3xl px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div class="flex items-center gap-4">
@@ -41,375 +42,172 @@
     </header>
 
     <section class="flex flex-col lg:flex-row gap-6">
-
+        <!-- SIDEBAR -->
         <div class="lg:w-1/4">
             <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-5 sticky top-6">
                 <h3 class="text-lg font-bold mb-4 px-2 text-slate-800">Danh mục thống kê</h3>
                 <ul class="space-y-2 font-medium">
                     <li>
-                        <button onclick="showTab('tab-history')" class="w-full text-left px-4 py-3 rounded-2xl bg-indigo-50 text-indigo-700 transition flex items-center gap-3">
-                            <span class="text-xl">📜</span>
-                            Lịch sử giao dịch
+                        <button onclick="showTab('tab-history')" class="w-full text-left px-4 py-3 rounded-2xl bg-indigo-50 text-indigo-700 transition flex items-center gap-3 nav-btn">
+                            <span class="text-xl">📜</span> Lịch sử giao dịch
                         </button>
                     </li>
                     <li>
-                        <button onclick="showTab('tab-inout')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
-                            <span class="text-xl">⚖️</span>
-                            Tổng hợp Thu / Chi
+                        <button onclick="showTab('tab-inout')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3 nav-btn">
+                            <span class="text-xl">⚖️</span> Tổng hợp Thu / Chi
                         </button>
                     </li>
                     <li>
-                        <button onclick="showTab('tab-top5')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
-                            <span class="text-xl">⭐</span>
-                            Top 5 Người nhận
+                        <button onclick="showTab('tab-district-risk')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition flex items-center gap-3 nav-btn">
+                            <span class="text-xl">⚠️</span> Cảnh báo rủi ro
                         </button>
                     </li>
                     <li>
-                        <button onclick="showTab('tab-category')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
-                            <span class="text-xl">📊</span>
-                            Phân loại chi tiêu
-                        </button>
-                    </li>
-                    <li>
-                        <button onclick="showTab('tab-district-risk')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition flex items-center gap-3">
-                            <span class="text-xl">⚠️</span>
-                            Cảnh báo rủi ro
-                        </button>
-                    </li>
-                    <li>
-                        <button onclick="showTab('tab-province-density')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
-                            <span class="text-xl">🗺️</span>
-                            Mật độ theo tỉnh
+                        <button onclick="showTab('tab-province-density')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3 nav-btn">
+                            <span class="text-xl">🗺️</span> Mật độ theo tỉnh
                         </button>
                     </li>
                     <li class="pt-2 mt-2 border-t border-slate-200">
-                        <a href="/admin/top-vip-customers" class="w-full text-left px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-700 hover:from-amber-100 hover:to-yellow-100 transition flex items-center gap-3 font-semibold border border-amber-200/60 shadow-sm">
-                            <span class="text-xl">👑</span>
-                            Top 5% KH Đại Gia
+                        <a href="/admin/top-vip-customers" class="w-full text-left px-4 py-2 rounded-xl text-amber-700 hover:bg-amber-50 transition flex items-center gap-3 text-sm">
+                            <span class="text-lg">👑</span> Top 5% khách hàng VIP
+                        </a>
+                        <a href="/admin/top-transfer-time" class="w-full text-left px-4 py-2 rounded-xl text-indigo-700 hover:bg-indigo-50 transition flex items-center gap-3 text-sm">
+                            <span class="text-lg">🕒</span> Khung giờ cao điểm
+                        </a>
+                        <a href="/admin/quarterly-growth" class="w-full text-left px-4 py-2 rounded-xl text-emerald-700 hover:bg-emerald-50 transition flex items-center gap-3 text-sm">
+                            <span class="text-lg">📈</span> Tăng trưởng theo Quý
                         </a>
                     </li>
                 </ul>
             </div>
         </div>
 
+        <!-- MAIN CONTENT -->
         <div class="lg:w-3/4">
-            <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6 min-h-[500px]">
+            <div class="bg-white/85 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl p-6 min-h-[600px]">
 
+                <!-- TAB: HISTORY -->
                 <div id="tab-history" class="tab-content block">
-
                     <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-slate-800">Lịch sử chuyển tiền chi tiết</h2>
-                        <p class="text-sm text-gray-500 mt-1">Tra cứu và theo dõi các giao dịch phát sinh trên tài khoản</p>
+                        <h2 class="text-2xl font-bold text-slate-800">Lịch sử giao dịch chi tiết</h2>
+                        <p class="text-sm text-gray-500 mt-1">Tra cứu dữ liệu từ Backend phân tán</p>
                     </div>
 
-                    <div class="app p-0 m-0 w-full bg-transparent">
-
-                        <section class="filter-card border border-slate-200 rounded-2xl p-5 mb-6 bg-slate-50/50">
-                            <div class="filter-head flex justify-between items-center mb-4">
-                                <h2 class="font-bold text-lg">Điều kiện tra cứu</h2>
-                                <div class="actions flex gap-2">
-                                    <button class="primary-btn px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition" id="applyFilterBtn" type="button">Tra cứu giao dịch</button>
-                                    <button class="secondary-btn px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm font-semibold hover:bg-slate-100 transition" id="resetFilterBtn" type="button">Làm mới</button>
-                                </div>
+                    <!-- Filter Section (From Code 1) -->
+                    <section class="filter-card border border-slate-200 rounded-2xl p-5 mb-6 bg-slate-50/50">
+                        <div class="filter-head flex justify-between items-center mb-4">
+                            <h2 class="font-bold text-lg">Điều kiện tra cứu</h2>
+                            <div class="actions flex gap-2">
+                                <button class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition" id="applyFilterBtn">Tra cứu</button>
+                                <button class="px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm font-semibold hover:bg-slate-100 transition" id="resetFilterBtn">Làm mới</button>
                             </div>
-
-                            <div class="filter-grid grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                                <div class="field flex flex-col">
-                                    <label for="accountFilter" class="mb-1 font-medium text-slate-700">Phạm vi</label>
-                                    <select id="accountFilter" class="p-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500"></select>
-                                </div>
-                                <div class="field flex flex-col">
-                                    <label for="filterType" class="mb-1 font-medium text-slate-700">Hình thức tra cứu</label>
-                                    <select id="filterType" class="p-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500">
-                                        <option value="day">Theo ngày</option>
-                                        <option value="week">Theo tuần</option>
-                                        <option value="month">Theo tháng</option>
-                                        <option value="quarter">Theo quý</option>
-                                        <option value="year">Theo năm</option>
-                                    </select>
-                                </div>
-                                <div class="field flex flex-col">
-                                    <label for="startValue" class="mb-1 font-medium text-slate-700">Thời gian bắt đầu</label>
-                                    <input id="startValue" type="date" class="p-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500" />
-                                </div>
-                                <div class="field flex flex-col">
-                                    <label for="endValue" class="mb-1 font-medium text-slate-700">Thời gian kết thúc</label>
-                                    <input id="endValue" type="date" class="p-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500" />
-                                </div>
-                                <div class="field flex flex-col">
-                                    <label for="statusFilter" class="mb-1 font-medium text-slate-700">Tình trạng</label>
-                                    <select id="statusFilter" class="p-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500">
-                                        <option value="all">Tất cả</option>
-                                        <option value="SUCCESS">Thành công</option>
-                                        <option value="PENDING">Chờ xử lý</option>
-                                        <option value="FAILED">Thất bại</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="meta-box mt-4 text-sm text-indigo-600 bg-indigo-50 p-2 rounded-lg" id="rangeInfo">Hệ thống đang tải lịch sử giao dịch từ backend.</div>
-                        </section>
-
-                        <section class="summary-grid grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            <div class="summary-box p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
-                                <div class="summary-label text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Tổng số giao dịch</div>
-                                <div class="summary-value text-2xl font-bold text-slate-800" id="totalCount">0</div>
-                            </div>
-                            <div class="summary-box p-4 bg-emerald-50 border border-emerald-100 rounded-2xl shadow-sm">
-                                <div class="summary-label text-xs font-medium text-emerald-600 uppercase tracking-wider mb-1">Giao dịch thành công</div>
-                                <div class="summary-value success text-2xl font-bold text-emerald-700" id="successCount">0</div>
-                            </div>
-                            <div class="summary-box p-4 bg-amber-50 border border-amber-100 rounded-2xl shadow-sm">
-                                <div class="summary-label text-xs font-medium text-amber-600 uppercase tracking-wider mb-1">Giao dịch chờ xử lý</div>
-                                <div class="summary-value pending text-2xl font-bold text-amber-600" id="pendingCount">0</div>
-                            </div>
-                            <div class="summary-box p-4 bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm">
-                                <div class="summary-label text-xs font-medium text-indigo-600 uppercase tracking-wider mb-1">Tổng số tiền</div>
-                                <div class="summary-value text-2xl font-bold text-indigo-700" id="amountTotal">0 VND</div>
-                            </div>
-                        </section>
-
-                        <section class="statistics-card bg-white border border-slate-200 rounded-2xl p-5 mb-6 shadow-sm">
-                            <div class="statistics-head mb-4 border-b border-slate-100 pb-4">
-                                <h2 class="section-title text-lg font-bold text-slate-800">Thống kê xu hướng</h2>
-                                <p class="statistics-note text-sm text-gray-500 mt-1" id="statisticsScopeNote">Đang tải dữ liệu biểu đồ.</p>
-                            </div>
-
-                            <div class="statistics-summary-grid grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                <div class="statistics-summary-box">
-                                    <div class="text-sm text-slate-500">Tổng tiền vào</div>
-                                    <div class="in font-bold text-emerald-600" id="statisticsTotalIn">0 VND</div>
-                                </div>
-                                <div class="statistics-summary-box">
-                                    <div class="text-sm text-slate-500">Tổng tiền ra</div>
-                                    <div class="out font-bold text-red-500" id="statisticsTotalOut">0 VND</div>
-                                </div>
-                                <div class="statistics-summary-box">
-                                    <div class="text-sm text-slate-500">Biến động ròng</div>
-                                    <div class="font-bold text-slate-800" id="statisticsNetAmount">0 VND</div>
-                                </div>
-                                <div class="statistics-summary-box">
-                                    <div class="text-sm text-slate-500">Tổng giá trị GD</div>
-                                    <div class="font-bold text-indigo-600" id="statisticsVolume">0 VND</div>
-                                </div>
-                            </div>
-
-                            <div class="statistics-chart-grid grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="statistics-panel">
-                                    <h3 class="statistics-panel-title text-sm font-semibold text-slate-700 mb-3">Số lượng giao dịch</h3>
-                                    <div class="chart-box h-48">
-                                        <canvas id="statisticsCountChart"></canvas>
-                                    </div>
-                                </div>
-                                <div class="statistics-panel">
-                                    <h3 class="statistics-panel-title text-sm font-semibold text-slate-700 mb-3">Dòng tiền vào / ra</h3>
-                                    <div class="chart-box h-48">
-                                        <canvas id="statisticsAmountChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="table-card bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                            <div class="table-head flex justify-between items-center p-4 bg-slate-50 border-b border-slate-200">
-                                <div>
-                                    <h2 class="table-title font-bold text-slate-800">Danh sách giao dịch</h2>
-                                </div>
-                                <div class="page-info text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full" id="pageInfo">0 giao dịch</div>
-                            </div>
-
-                            <div class="table-wrap overflow-x-auto">
-                                <table class="w-full text-left text-sm whitespace-nowrap">
-                                    <thead class="bg-white border-b border-slate-200 text-slate-500">
-                                    <tr>
-                                        <th class="p-4 font-semibold">Mã giao dịch</th>
-                                        <th class="p-4 font-semibold">Hướng giao dịch</th>
-                                        <th class="p-4 font-semibold">Tài khoản đối ứng</th>
-                                        <th class="p-4 font-semibold">Nội dung giao dịch</th>
-                                        <th class="p-4 font-semibold">Số tiền</th>
-                                        <th class="p-4 font-semibold">Trạng thái</th>
-                                        <th class="p-4 font-semibold">Thời điểm giao dịch</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="transactionTableBody" class="divide-y divide-slate-100">
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div class="empty p-8 text-center text-slate-500" id="emptyState" hidden>Không phát sinh giao dịch phù hợp với điều kiện tra cứu đã chọn.</div>
-
-                            <div class="table-footer p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap justify-between items-center gap-4">
-                                <div class="page-size-box flex items-center gap-2 text-sm text-slate-600">
-                                    <label for="pageSizeSelect">Số dòng mỗi trang</label>
-                                    <select id="pageSizeSelect" class="border border-slate-200 rounded-lg p-1.5 outline-none focus:border-indigo-500"></select>
-                                </div>
-
-                                <div class="pagination-wrap flex items-center gap-2 text-sm" id="paginationWrap">
-                                    <button class="page-btn nav px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition" id="prevPageBtn" type="button">Trang trước</button>
-                                    <div class="page-numbers flex gap-1 font-medium text-slate-700" id="pageNumberList"></div>
-                                    <button class="page-btn nav px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition" id="nextPageBtn" type="button">Trang sau</button>
-                                </div>
-                            </div>
-                        </section>
-
-                    </div> </div>
-
-                <div id="tab-inout" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Tổng hợp Thu / Chi</h2>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
-                            <p class="text-sm text-emerald-600 font-semibold mb-1">Tổng IN (Nhận)</p>
-                            <h3 class="text-3xl font-bold text-emerald-700">24.200.000đ</h3>
                         </div>
-                        <div class="bg-red-50 p-6 rounded-2xl border border-red-100">
-                            <p class="text-sm text-red-600 font-semibold mb-1">Tổng OUT (Chuyển)</p>
-                            <h3 class="text-3xl font-bold text-red-700">18.500.000đ</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                            <div class="flex flex-col"><label class="mb-1 font-medium">Phạm vi</label><select id="accountFilter" class="p-2.5 rounded-xl border border-slate-200 outline-none"></select></div>
+                            <div class="flex flex-col"><label class="mb-1 font-medium">Hình thức</label><select id="filterType" class="p-2.5 rounded-xl border border-slate-200 outline-none"><option value="day">Theo ngày</option><option value="month">Theo tháng</option></select></div>
+                            <div class="flex flex-col"><label class="mb-1 font-medium">Bắt đầu</label><input id="startValue" type="date" class="p-2.5 rounded-xl border border-slate-200 outline-none" /></div>
+                            <div class="flex flex-col"><label class="mb-1 font-medium">Kết thúc</label><input id="endValue" type="date" class="p-2.5 rounded-xl border border-slate-200 outline-none" /></div>
+                            <div class="flex flex-col"><label class="mb-1 font-medium">Trạng thái</label><select id="statusFilter" class="p-2.5 rounded-xl border border-slate-200 outline-none"><option value="all">Tất cả</option><option value="SUCCESS">Thành công</option></select></div>
                         </div>
+                    </section>
+
+                    <!-- Table (Merged Design) -->
+                    <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                        <table class="w-full text-left text-sm whitespace-nowrap" id="transactionTable">
+                            <thead class="bg-slate-50 text-slate-500">
+                            <tr>
+                                <th class="p-4 font-semibold">Mã GD</th>
+                                <th class="p-4 font-semibold">Loại</th>
+                                <th class="p-4 font-semibold">Nội dung</th>
+                                <th class="p-4 font-semibold text-right">Số tiền</th>
+                                <th class="p-4 font-semibold text-center">Trạng thái</th>
+                                <th class="p-4 font-semibold">Thời gian</th>
+                            </tr>
+                            </thead>
+                            <tbody id="transactionTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div id="tab-top5" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Top 5 Người Nhận Thường Xuyên</h2>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-lg">1</div>
-                                <div>
-                                    <p class="font-bold text-slate-800">Công chúa Mic</p>
-                                    <p class="text-xs text-gray-500">Đã chuyển 15 lần</p>
-                                </div>
-                            </div>
-                            <button class="px-4 py-2 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-xl hover:bg-indigo-200 transition">Chuyển ngay</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── TAB CẢNH BÁO RỦI RO (Hà Khánh Quân) ── -->
+                <!-- TAB: DISTRICT RISK (Detailed from Code 1) -->
                 <div id="tab-district-risk" class="tab-content hidden">
                     <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">⚠️ Cảnh báo rủi ro giao dịch</h2>
-                            <p class="text-sm text-gray-500 mt-1">Cảnh báo rủi ro theo khu vực. Thống kê tỷ lệ giao dịch FAILED hoặc REVERSED trên từng district.</p>
+                            <p class="text-sm text-gray-500 mt-1">Phân tích rủi ro khu vực qua MapReduce trên HDFS</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-3">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-medium text-slate-600">Năm</label>
-                                <input id="drYear" type="number" value="2026" min="2020" max="2030"
-                                    class="px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 w-24"/>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-medium text-slate-600">Quý</label>
-                                <select id="drQuarter" class="px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400">
-                                    <option value="Q1">Q1 (T1–T3)</option>
-                                    <option value="Q2">Q2 (T4–T6)</option>
-                                    <option value="Q3">Q3 (T7–T9)</option>
-                                    <option value="Q4">Q4 (T10–T12)</option>
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-medium text-slate-600 opacity-0">_</label>
-                                <button onclick="loadDistrictRisk()"
-                                    class="px-5 py-2 rounded-xl bg-gradient-to-r from-red-500 to-orange-400 text-white text-sm font-semibold shadow hover:scale-105 transition">
-                                    Chạy MapReduce
-                                </button>
-                            </div>
+                        <div class="flex items-center gap-3">
+                            <input id="drYear" type="number" value="2026" class="px-3 py-2 rounded-xl border border-slate-200 text-sm w-24"/>
+                            <select id="drQuarter" class="px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                                <option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option>
+                            </select>
+                            <button onclick="loadDistrictRisk()" class="px-5 py-2 bg-gradient-to-r from-red-500 to-orange-400 text-white rounded-xl text-sm font-semibold shadow hover:scale-105 transition">Chạy MapReduce</button>
                         </div>
                     </div>
-
-                    <!-- Status -->
                     <p id="drStatus" class="hidden mb-4 text-sm px-4 py-3 rounded-2xl"></p>
-
-                    <!-- Summary cards -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                            <p class="text-xs text-gray-500 mb-1">Tổng district</p>
-                            <p id="drCardDistricts" class="text-2xl font-bold text-slate-800">—</p>
-                        </div>
-                        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                            <p class="text-xs text-gray-500 mb-1">Tổng giao dịch</p>
-                            <p id="drCardTotal" class="text-2xl font-bold text-slate-800">—</p>
-                        </div>
-                        <div class="bg-red-50 border border-red-100 rounded-2xl p-4">
-                            <p class="text-xs text-red-500 mb-1">Rủi ro cao nhất</p>
-                            <p id="drCardTop" class="text-lg font-bold text-red-600">—</p>
-                            <p id="drCardTopRate" class="text-xs text-red-400">—</p>
-                        </div>
-                    </div>
-
-                    <!-- Chart + Table -->
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        <div class="bg-white border border-slate-100 rounded-2xl p-5">
-                            <h3 class="text-sm font-semibold text-slate-700 mb-4">Tỉ lệ thất bại theo district (%)</h3>
-                            <div style="height:300px">
-                                <canvas id="drChart"></canvas>
-                            </div>
-                        </div>
+                        <div class="bg-white border border-slate-100 rounded-2xl p-5"><canvas id="drChart"></canvas></div>
                         <div class="bg-white border border-slate-100 rounded-2xl overflow-hidden">
-                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-slate-700">Chi tiết theo district</h3>
-                                <span class="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full">Cao → Thấp</span>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm">
-                                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
-                                        <tr>
-                                            <th class="px-3 py-3 text-left">#</th>
-                                            <th class="px-3 py-3 text-left">District</th>
-                                            <th class="px-3 py-3 text-right">Tổng GD</th>
-                                            <th class="px-3 py-3 text-right" title="FAILED + REVERSED">Thất bại</th>
-                                            <th class="px-3 py-3 text-right" title="Chỉ REVERSED">Hoàn tiền</th>
-                                            <th class="px-3 py-3 text-right" title=">= 3 lần >= 500 triệu/giờ">Tiền lớn</th>
-                                            <th class="px-3 py-3 text-right" title=">= 2 lần/phút">Rapid Fire</th>
-                                            <th class="px-3 py-3 text-right" title=">= 5 counterparty/giờ">Fan-out</th>
-                                            <th class="px-3 py-3 text-right">Tỉ lệ lỗi</th>
-                                            <th class="px-3 py-3 text-center">Mức độ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="drTableBody" class="divide-y divide-slate-50">
-                                        <tr><td colspan="10" class="px-4 py-8 text-center text-slate-400 text-xs">Nhấn "Chạy MapReduce" để tải dữ liệu</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bảng ngưỡng kích hoạt (Threshold Reference) -->
-                    <div class="mt-6 bg-white border border-slate-100 rounded-2xl overflow-hidden">
-                        <div class="px-5 py-4 border-b border-slate-100">
-                            <h3 class="text-sm font-semibold text-slate-700">📋 Bảng ngưỡng kích hoạt cảnh báo</h3>
-                        </div>
-                        <div class="overflow-x-auto">
                             <table class="w-full text-xs">
-                                <thead class="bg-slate-50 text-slate-500 uppercase">
-                                    <tr>
-                                        <th class="px-4 py-2 text-left">Loại rủi ro</th>
-                                        <th class="px-4 py-2 text-left">Chỉ số kích hoạt</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-50">
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-4 py-2 font-medium text-purple-700">Velocity (Rapid Fire)</td>
-                                        <td class="px-4 py-2 text-slate-600">&gt; 2 giao dịch / phút từ cùng 1 account</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-4 py-2 font-medium text-red-700">High Reversal Area</td>
-                                        <td class="px-4 py-2 text-slate-600">Tỉ lệ REVERSED &ge; 15% tại district</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-4 py-2 font-medium text-red-700">Fan-out Pattern</td>
-                                        <td class="px-4 py-2 text-slate-600">&ge; 5 counterparty khác nhau / giờ</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-4 py-2 font-medium text-amber-700">District Failure Spike</td>
-                                        <td class="px-4 py-2 text-slate-600">Tỉ lệ FAILED &ge; 20% tại district</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-4 py-2 font-medium text-blue-700">Pattern Shift (High Frequency Large Value)</td>
-                                        <td class="px-4 py-2 text-slate-600">Cùng account &ge; 3 giao dịch &ge; 500 triệu / giờ tại district</td>
-                                    </tr>
-                                </tbody>
+                                <thead class="bg-slate-50"><tr><th class="px-3 py-3 text-left">District</th><th class="px-3 py-3 text-right">Tổng GD</th><th class="px-3 py-3 text-right">Tỉ lệ lỗi</th><th class="px-3 py-3 text-center">Mức độ</th></tr></thead>
+                                <tbody id="drTableBody" class="divide-y divide-slate-50"></tbody>
                             </table>
                         </div>
                     </div>
+                </div>
+
+                <!-- TAB: PROVINCE DENSITY (Improved UI from Code 2) -->
+                <div id="tab-province-density" class="tab-content hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Mật độ giao dịch theo tỉnh</h2>
+                            <p class="text-sm text-gray-500 mt-1">Xếp hạng mật độ dữ liệu gộp từ các mảnh Province</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="provinceDensityYear" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none">
+                                <option value="2026">2026</option><option value="2025">2025</option>
+                            </select>
+                            <select id="provinceDensityQuarter" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none">
+                                <option value="Q1">Quý 1</option><option value="Q2">Quý 2</option><option value="Q3">Quý 3</option><option value="Q4">Quý 4</option>
+                            </select>
+                            <button onclick="loadProvinceDensity()" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">Phân tích</button>
+                        </div>
+                    </div>
+
+                    <div id="provinceDensityLoading" class="hidden text-center py-16">
+                        <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p class="text-gray-500">Đang chạy MapReduce gộp dữ liệu các mảnh...</p>
+                    </div>
+
+                    <div id="provinceDensityResults" class="">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                            <tr class="text-sm text-gray-500 border-b border-slate-200">
+                                <th class="py-3 px-4 font-semibold w-16">Hạng</th>
+                                <th class="py-3 px-4 font-semibold">Tỉnh / Thành phố</th>
+                                <th class="py-3 px-4 font-semibold text-right">Tổng giao dịch</th>
+                                <th class="py-3 px-4 font-semibold">Mật độ</th>
+                            </tr>
+                            </thead>
+                            <tbody id="provinceDensityBody" class="text-sm divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB: IN/OUT (Standard) -->
+                <div id="tab-inout" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Tổng hợp Thu / Chi</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
+                            <p class="text-sm text-emerald-600 font-semibold">Tổng NHẬN (IN)</p>
+                            <h3 class="text-3xl font-bold text-emerald-700">24.200.000đ</h3>
+                        </div>
+                        <div class="bg-red-50 p-6 rounded-2xl border border-red-100">
+                            <p class="text-sm text-red-600 font-semibold">Tổng CHUYỂN (OUT)</p>
+                            <h3 class="text-3xl font-bold text-red-700">18.500.000đ</h3>
+                        </div>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -417,128 +215,119 @@
 </div>
 
 <script>
+    // --- UI LOGIC ---
     function showTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(el => {
-            el.classList.add('hidden');
-            el.classList.remove('block');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        const target = document.getElementById(tabId);
+        if (target) target.classList.remove('hidden');
+
+        // Highlight sidebar
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-50', 'text-indigo-700');
+            btn.classList.add('text-gray-600');
+            if (btn.getAttribute('onclick').includes(tabId)) {
+                btn.classList.add('bg-indigo-50', 'text-indigo-700');
+                btn.classList.remove('text-gray-600');
+            }
         });
-        document.getElementById(tabId).classList.remove('hidden');
-        document.getElementById(tabId).classList.add('block');
     }
 
+    // --- DISTRICT RISK LOGIC (From Code 1) ---
     let drChart = null;
-
     async function loadDistrictRisk() {
-        const year    = document.getElementById('drYear').value;
+        const year = document.getElementById('drYear').value;
         const quarter = document.getElementById('drQuarter').value;
-        const token   = localStorage.getItem('token') || '';
-        const btn     = document.querySelector('[onclick="loadDistrictRisk()"]');
+        const statusEl = document.getElementById('drStatus');
 
-        btn.disabled = true;
-        btn.textContent = 'Đang chạy...';
-        showDrStatus('Đang chạy MapReduce job trên HDFS, vui lòng chờ...', false);
+        statusEl.classList.remove('hidden');
+        statusEl.textContent = 'Đang chạy MapReduce trên HDFS...';
+        statusEl.className = 'mb-4 text-sm px-4 py-3 rounded-2xl bg-blue-50 text-blue-700';
 
         try {
-            const res  = await fetch(`/api/hadoop/district-risk?year=${year}&quarter=${quarter}`, {
-                headers: { Authorization: `Bearer ${token}` }
+            const res = await fetch(`/api/hadoop/district-risk?year=${year}&quarter=${quarter}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             const json = await res.json();
-            if (!res.ok) throw new Error(json?.message || 'Lỗi server');
-
             const data = json.data || [];
 
-            // Cards
-            const totalTx = data.reduce((s, d) => s + d.totalTx, 0);
-            document.getElementById('drCardDistricts').textContent = data.length;
-            document.getElementById('drCardTotal').textContent     = totalTx.toLocaleString('vi-VN');
-            if (data.length > 0) {
-                document.getElementById('drCardTop').textContent     = data[0].district;
-                document.getElementById('drCardTopRate').textContent =
-                    data[0].failRate.toFixed(2) + '% thất bại · ' + data[0].riskLevel;
-            }
-
-            // Chart (top 10 theo failRate)
-            const top    = [...data].sort((a,b) => b.failRate - a.failRate).slice(0, 10);
-            const colors = top.map(d =>
-                d.riskLevel === 'CAO'        ? 'rgba(239,68,68,0.75)'
-              : d.riskLevel === 'TRUNG_BINH' ? 'rgba(245,158,11,0.75)'
-              :                                'rgba(16,185,129,0.75)'
-            );
+            // Render Chart
             if (drChart) drChart.destroy();
-            drChart = new Chart(document.getElementById('drChart').getContext('2d'), {
+            const ctx = document.getElementById('drChart').getContext('2d');
+            drChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: top.map(d => d.district),
+                    labels: data.slice(0, 10).map(d => d.district),
                     datasets: [{
-                        label: 'Tỉ lệ thất bại (%)',
-                        data: top.map(d => d.failRate),
-                        backgroundColor: colors,
-                        borderRadius: 6,
-                        borderSkipped: false
+                        label: 'Tỉ lệ lỗi (%)',
+                        data: data.slice(0, 10).map(d => d.failRate),
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)'
                     }]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } },
-                        y: { grid: { display: false } }
-                    }
-                }
+                options: { indexAxis: 'y', responsive: true }
             });
 
-            // Table
-            const tbody = document.getElementById('drTableBody');
-            if (!data.length) {
-                tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-slate-400 text-xs">Không có dữ liệu</td></tr>`;
-            } else {
-                tbody.innerHTML = data.map((d, i) => {
-                    const { cls, label } = riskBadge(d.riskLevel);
-                    const rateColor = d.riskLevel === 'CAO' ? 'text-red-600'
-                                    : d.riskLevel === 'TRUNG_BINH' ? 'text-amber-500'
-                                    : 'text-emerald-600';
-                    return `<tr class="hover:bg-slate-50 transition text-xs">
-                        <td class="px-3 py-3 text-slate-400">${i+1}</td>
-                        <td class="px-3 py-3 font-semibold text-slate-800">${d.district}</td>
-                        <td class="px-3 py-3 text-right">${d.totalTx.toLocaleString('vi-VN')}</td>
-                        <td class="px-3 py-3 text-right text-red-500">${d.failedTx}</td>
-                        <td class="px-3 py-3 text-right text-orange-500">${d.reversedTx}</td>
-                        <td class="px-3 py-3 text-right text-blue-500">${d.largeAmountTx > 0 ? '💸 '+d.largeAmountTx : 0}</td>
-                        <td class="px-3 py-3 text-right text-purple-600 font-bold">${d.rapidFireTx > 0 ? '⚡ '+d.rapidFireTx : 0}</td>
-                        <td class="px-3 py-3 text-right text-pink-500">${d.fanOutTx}</td>
-                        <td class="px-3 py-3 text-right font-bold ${rateColor}">${d.failRate.toFixed(1)}%</td>
-                        <td class="px-3 py-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-semibold ${cls}">${label}</span></td>
-                    </tr>`;
-                }).join('');
-            }
+            // Render Table
+            document.getElementById('drTableBody').innerHTML = data.map((d, i) => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-3 py-3 font-medium">${d.district}</td>
+                    <td class="px-3 py-3 text-right">${d.totalTx}</td>
+                    <td class="px-3 py-3 text-right text-red-600 font-bold">${d.failRate.toFixed(1)}%</td>
+                    <td class="px-3 py-3 text-center">
+                        <span class="px-2 py-1 rounded-full text-[10px] font-bold ${d.riskLevel === 'CAO' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">
+                            ${d.riskLevel}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
 
-            showDrStatus(`Hoàn tất. ${data.length} district trong ${year}-${quarter}.`, false);
+            statusEl.textContent = 'MapReduce hoàn tất thành công!';
+            statusEl.className = 'mb-4 text-sm px-4 py-3 rounded-2xl bg-green-50 text-green-700';
         } catch (err) {
-            showDrStatus('Lỗi: ' + err.message, true);
+            statusEl.textContent = 'Lỗi kết nối HDFS: ' + err.message;
+            statusEl.className = 'mb-4 text-sm px-4 py-3 rounded-2xl bg-red-50 text-red-700';
         }
-
-        btn.disabled = false;
-        btn.textContent = 'Chạy MapReduce';
     }
 
-    function riskBadge(level) {
-        if (level === 'CAO')        return { label: 'Cao',        cls: 'bg-red-100 text-red-600'     };
-        if (level === 'TRUNG_BINH') return { label: 'Trung bình', cls: 'bg-amber-100 text-amber-600' };
-        return                             { label: 'Thấp',       cls: 'bg-emerald-100 text-emerald-600' };
-    }
+    // --- PROVINCE DENSITY LOGIC (From Code 2) ---
+    async function loadProvinceDensity() {
+        const loading = document.getElementById('provinceDensityLoading');
+        const results = document.getElementById('provinceDensityResults');
+        loading.classList.remove('hidden');
+        results.classList.add('hidden');
 
-    function showDrStatus(msg, isError) {
-        const el = document.getElementById('drStatus');
-        el.classList.remove('hidden');
-        el.textContent = msg;
-        el.className = `mb-4 text-sm px-4 py-3 rounded-2xl ${
-            isError ? 'bg-red-50 text-red-700' : 'bg-slate-50 text-slate-600'
-        }`;
+        try {
+            // Mocking API call - Replace with your real endpoint
+            const res = await fetch(`/api/hadoop/province-density`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+
+            const tbody = document.getElementById('provinceDensityBody');
+            tbody.innerHTML = data.map((d, i) => `
+                <tr>
+                    <td class="py-3 px-4 font-bold text-slate-400">${i+1}</td>
+                    <td class="py-3 px-4 font-semibold">${d.province}</td>
+                    <td class="py-3 px-4 text-right">${d.count.toLocaleString()}</td>
+                    <td class="py-3 px-4">
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div class="bg-indigo-600 h-full" style="width: ${d.percentage}%"></div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            results.classList.remove('hidden');
+        } catch (e) {
+            console.error(e);
+        } finally {
+            loading.classList.add('hidden');
+        }
     }
 </script>
 
+<!-- External Scripts -->
 <script src="/js/historyTransfer.js"></script>
+<script src="/js/adminDashboard.js"></script>
 
 </body>
 </html>

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EBank - Thống Kê</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 font-sans text-gray-800">
@@ -73,6 +72,14 @@
                             Phân loại chi tiêu
                         </button>
                     </li>
+
+
+                    <li>
+                        <button onclick="showTab('tab-province-density')" class="w-full text-left px-4 py-3 rounded-2xl text-gray-600 hover:bg-slate-50 hover:text-indigo-600 transition flex items-center gap-3">
+                            <span class="text-xl">🗺️</span>
+                            Mật độ theo tỉnh
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -86,10 +93,10 @@
                             <h2 class="text-2xl font-bold text-slate-800">Lịch sử chuyển tiền</h2>
                             <p class="text-sm text-gray-500 mt-1">Thống kê theo tháng, quý, năm của bạn</p>
                         </div>
-                        <select id="groupBySelect" onchange="fetchStatistics()" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
-                            <option value="month">Theo tháng</option>
-                            <option value="quarter">Theo quý</option>
-                            <option value="year">Theo năm</option>
+                        <select class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
+                            <option>Tháng 4/2026</option>
+                            <option>Quý 1/2026</option>
+                            <option>Năm 2026</option>
                         </select>
                     </div>
 
@@ -142,68 +149,7 @@
                     <div id="topRecipientsList" class="space-y-3"></div>
                 </div>
 
-                <!-- Tab Mật độ giao dịch theo tỉnh -->
-                <div id="tab-province-density" class="tab-content hidden">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-800">Mật độ giao dịch theo tỉnh</h2>
-                            <p class="text-sm text-gray-500 mt-1">Gộp dữ liệu từ các mảnh province — xếp hạng từ cao đến thấp</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <select id="provinceDensityYear" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
-                                <option value="2025">2025</option>
-                                <option value="2026" selected>2026</option>
-                            </select>
-                            <select id="provinceDensityQuarter" class="bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 outline-none focus:border-indigo-400">
-                                <option value="Q1">Quý 1</option>
-                                <option value="Q2">Quý 2</option>
-                                <option value="Q3">Quý 3</option>
-                                <option value="Q4">Quý 4</option>
-                            </select>
-                            <button id="provinceDensityBtn" onclick="loadProvinceDensity()" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition shadow-md">
-                                Phân tích
-                            </button>
-                        </div>
-                    </div>
 
-                    <!-- Loading state -->
-                    <div id="provinceDensityLoading" class="hidden flex flex-col items-center justify-center py-16">
-                        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-                        <p class="text-sm text-gray-500 font-medium">Đang chạy MapReduce gộp dữ liệu từ các mảnh…</p>
-                    </div>
-
-                    <!-- Empty state -->
-                    <div id="provinceDensityEmpty" class="hidden flex flex-col items-center justify-center py-16">
-                        <span class="text-5xl mb-4">📭</span>
-                        <p class="text-gray-500 font-medium">Chưa có dữ liệu. Hãy chọn năm/quý và nhấn "Phân tích".</p>
-                    </div>
-
-                    <!-- Error state -->
-                    <div id="provinceDensityError" class="hidden bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
-                        <p class="text-red-600 text-sm font-medium" id="provinceDensityErrorMsg"></p>
-                    </div>
-
-                    <!-- Results table -->
-                    <div id="provinceDensityResults" class="hidden">
-                        <div class="mb-4 flex items-center gap-3">
-                            <span class="text-sm text-gray-500">Tổng số tỉnh/thành phố:</span>
-                            <span id="provinceDensityCount" class="text-sm font-bold text-indigo-600">0</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                <tr class="text-sm text-gray-500 border-b border-slate-200">
-                                    <th class="py-3 px-4 font-semibold w-16">Hạng</th>
-                                    <th class="py-3 px-4 font-semibold">Tỉnh / Thành phố</th>
-                                    <th class="py-3 px-4 font-semibold text-right w-40">Tổng giao dịch</th>
-                                    <th class="py-3 px-4 font-semibold w-48">Mật độ</th>
-                                </tr>
-                                </thead>
-                                <tbody id="provinceDensityBody" class="text-sm"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
 
             </div>
         </div>
@@ -221,74 +167,6 @@
         // Hiện tab được chọn
         document.getElementById(tabId).classList.remove('hidden');
         document.getElementById(tabId).classList.add('block');
-    }
-
-    let chartInstance = null;
-
-    async function fetchStatistics() {
-        const groupBy = document.getElementById('groupBySelect').value;
-        const token = localStorage.getItem("token");
-        try {
-            const response = await fetch(`/api/reports/my-transactions/statistics?groupBy=${groupBy}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            const data = await response.json();
-            if (data.code === 200) {
-                renderChart(data.data.points);
-            }
-        } catch (error) {
-            console.error("Error fetching statistics:", error);
-        }
-    }
-
-    function renderChart(points) {
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        const labels = points.map(p => p.label);
-        const dataIn = points.map(p => p.totalIn);
-        const dataOut = points.map(p => p.totalOut);
-
-        if (chartInstance) {
-            chartInstance.destroy();
-        }
-
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Tiền vào',
-                        data: dataIn,
-                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'Tiền ra',
-                        data: dataOut,
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                        borderRadius: 4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
 
         // Xử lý đổi màu nút active ở menu bên trái
         const sidebar = document.querySelector('.sticky');
@@ -306,58 +184,6 @@
             });
         }
     }
-    async function fetchHistory() {
-        const token = localStorage.getItem("token");
-        try {
-            const response = await fetch(`/api/reports/my-transactions?page=0&size=10`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            const data = await response.json();
-            if (data.code === 200) {
-                renderHistoryTable(data.data.items);
-            }
-        } catch (error) {
-            console.error("Error fetching history:", error);
-        }
-    }
-
-    function renderHistoryTable(items) {
-        const tbody = document.getElementById('historyTableBody');
-        tbody.innerHTML = '';
-        items.forEach(item => {
-            const date = new Date(item.createdAt).toLocaleDateString('vi-VN');
-            const amountStr = item.amount.toLocaleString('vi-VN') + 'đ';
-            let amountHtml = '';
-            let desc = item.description || 'Giao dịch';
-
-            if (item.direction === 'IN') {
-                amountHtml = `<span class="text-emerald-500 font-bold">+${amountStr}</span>`;
-                desc = `Nhận từ ${item.counterpartyAccount || 'Không rõ'}`;
-            } else if (item.direction === 'OUT') {
-                amountHtml = `<span class="text-red-500 font-bold">-${amountStr}</span>`;
-                desc = `Chuyển đến ${item.counterpartyAccount || 'Không rõ'}`;
-            } else {
-                amountHtml = `<span class="text-gray-500 font-bold">${amountStr}</span>`;
-            }
-
-            const tr = document.createElement('tr');
-            tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition';
-            tr.innerHTML = `
-                <td class="py-3 px-4">${date}</td>
-                <td class="py-3 px-4 font-medium">${desc}</td>
-                <td class="py-3 px-4 text-right">${amountHtml}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        fetchStatistics();
-        fetchHistory();
-    });
 </script>
 <script src="/js/statistics.js"></script>
 </body>
