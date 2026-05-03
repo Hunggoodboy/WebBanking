@@ -93,8 +93,9 @@
                         </select>
                     </div>
 
-                    <div class="w-full h-64 bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-center mb-6">
-                        <span class="text-gray-400 font-medium">Biểu đồ biểu diễn dữ liệu sẽ được render tại đây</span>
+                    <div class="w-full h-64 bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-center mb-6 relative">
+                        <canvas id="historyChart" class="w-full h-full absolute inset-0"></canvas>
+                        <span class="text-gray-400 font-medium z-[-1]">Biểu đồ biểu diễn dữ liệu sẽ được render tại đây</span>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -106,7 +107,7 @@
                                 <th class="py-3 px-4 font-semibold text-right">Số tiền</th>
                             </tr>
                             </thead>
-                            <tbody class="text-sm">
+                            <tbody id="historyTableBody" class="text-sm">
                             <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                                 <td class="py-3 px-4">12/04/2026</td>
                                 <td class="py-3 px-4 font-medium">Chuyển đến Nguyễn Văn A</td>
