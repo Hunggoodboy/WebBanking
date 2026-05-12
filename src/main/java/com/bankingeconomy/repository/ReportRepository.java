@@ -23,9 +23,9 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
               AND t.createdAt >= :start
               AND t.createdAt <= :end
             """)
-    Page<Transaction> findMyTransactionHistory(UUID userId,
-                                               LocalDateTime start,
-                                               LocalDateTime end,
+    Page<Transaction> findMyTransactionHistory(@Param("userId") UUID userId,
+                                               @Param("start") LocalDateTime start,
+                                               @Param("end") LocalDateTime end,
                                                Pageable pageable);
 
     @Query("""
@@ -39,9 +39,9 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
               AND t.createdAt <= :end
             ORDER BY t.createdAt ASC
             """)
-    List<Transaction> findTransactionsForUserStatistics(UUID userId,
-                                                        LocalDateTime start,
-                                                        LocalDateTime end);
+    List<Transaction> findTransactionsForUserStatistics(@Param("userId") UUID userId,
+                                                        @Param("start") LocalDateTime start,
+                                                        @Param("end") LocalDateTime end);
 
     @Query("""
             SELECT t FROM Transaction t
@@ -49,8 +49,8 @@ public interface ReportRepository extends JpaRepository<Transaction, UUID> {
               AND t.createdAt <= :end
             ORDER BY t.createdAt ASC
             """)
-    List<Transaction> findTransactionsForAdminStatistics(LocalDateTime start,
-                                                         LocalDateTime end);
+    List<Transaction> findTransactionsForAdminStatistics(@Param("start") LocalDateTime start,
+                                                         @Param("end") LocalDateTime end);
 
     /**
      * Lọc Top 5% khách hàng "đại gia" — chuyển tiền nhiều nhất trong năm.
@@ -137,4 +137,3 @@ List<Object[]> getMonthlyReportRange(
         @Param("end") LocalDateTime end
 );
 }
-
